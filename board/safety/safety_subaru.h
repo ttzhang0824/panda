@@ -12,6 +12,9 @@ const int SUBARU_STANDSTILL_THRSLD = 20;  // about 1kph
 const CanMsg SUBARU_TX_MSGS[] = {{0x122, 0, 8}, {0x221, 0, 8}, {0x322, 0, 8}};
 const int SUBARU_TX_MSGS_LEN = sizeof(SUBARU_TX_MSGS) / sizeof(SUBARU_TX_MSGS[0]);
 
+const CanMsg SUBARU_GEN2_TX_MSGS[] = {{0x122, 0, 8}, {0x322, 0, 8}, {0x139, 2, 8}};
+const int SUBARU_GEN2_TX_MSGS_LEN = sizeof(SUBARU_GEN2_TX_MSGS) / sizeof(SUBARU_GEN2_TX_MSGS[0]);
+
 AddrCheckStruct subaru_rx_checks[] = {
   {.msg = {{ 0x40, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}}},
   {.msg = {{0x119, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
@@ -20,6 +23,16 @@ AddrCheckStruct subaru_rx_checks[] = {
   {.msg = {{0x240, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 50000U}}},
 };
 const int SUBARU_RX_CHECK_LEN = sizeof(subaru_rx_checks) / sizeof(subaru_rx_checks[0]);
+
+AddrCheckStruct subaru_gen2_rx_checks[] = {
+  {.msg = {{ 0x40, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}}},
+  {.msg = {{0x119, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
+  {.msg = {{0x139, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
+  {.msg = {{0x13a, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
+  {.msg = {{0x240, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 50000U}}},
+  {.msg = {{0x321, 2, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 100000U}}},
+};
+const int SUBARU_GEN2_RX_CHECK_LEN = sizeof(subaru_gen2_rx_checks) / sizeof(subaru_gen2_rx_checks[0]);
 
 static uint8_t subaru_get_checksum(CAN_FIFOMailBox_TypeDef *to_push) {
   return (uint8_t)GET_BYTE(to_push, 0);
@@ -173,6 +186,98 @@ static int subaru_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   return bus_fwd;
 }
 
+// subaru gen2
+static int subaru_gen2_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
+
+  bool valid = addr_safety_check(to_push, subaru_gen2_rx_checks, SUBARU_GEN2_RX_CHECK_LEN,
+                            subaru_get_checksum, subaru_compute_checksum, subaru_get_counter);
+  int addr = GET_ADDR(to_push);
+
+  if (valid && (GET_BUS(to_push) == 0)) {
+    if (addr == 0x119) {
+      int torque_driver_new;
+      torque_driver_new = ((GET_BYTES_04(to_push) >> 16) & 0x7FF);
+      torque_driver_new = -1 * to_signed(torque_driver_new, 11);
+      update_sample(&torque_driver, torque_driver_new);
+    }
+  }
+
+  if (valid && (GET_BUS(to_push) == 1)) {
+    // enter controls on rising edge of ACC, exit controls on ACC off
+    if (addr == 0x240) {
+      int cruise_engaged = ((GET_BYTES_48(to_push) >> 9) & 1);
+      if (cruise_engaged && !cruise_engaged_prev) {
+        controls_allowed = 1;
+      }
+      if (!cruise_engaged) {
+        controls_allowed = 0;
+      }
+      cruise_engaged_prev = cruise_engaged;
+    }
+
+    // sample wheel speed, averaging opposite corners
+    if (addr == 0x13a) {
+      int subaru_speed = (GET_BYTES_04(to_push) >> 12) & 0x1FFF;  // FR
+      subaru_speed += (GET_BYTES_48(to_push) >> 6) & 0x1FFF;  // RL
+      subaru_speed /= 2;
+      vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
+    }
+  }
+
+  if (valid && (GET_BUS(to_push) == 0)) {
+    if (addr == 0x139) {
+      brake_pressed = (GET_BYTES_48(to_push) & 0xFFF0) > 0;
+    }
+    // exit controls on rising edge of brake press
+    if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
+      controls_allowed = 0;
+    }
+    brake_pressed_prev = brake_pressed;
+
+    if (addr == 0x40) {
+      gas_pressed = GET_BYTE(to_push, 4) != 0;
+    }
+    // exit controls on rising edge of gas press
+    if (gas_pressed && !gas_pressed_prev && !(unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS)) {
+      controls_allowed = 0;
+    }
+    gas_pressed_prev = gas_pressed;
+
+    // check if stock ECU is on bus broken by car harness
+    if (addr == 0x122) {
+      if (safety_mode_cnt > RELAY_TRNS_TIMEOUT) {
+        relay_malfunction_set();
+      }
+    }
+  }
+  return valid;
+}
+
+static int subaru_gen2_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
+  int bus_fwd = -1;
+
+  if (!relay_malfunction) {
+    if (bus_num == 0) {
+      int block_msg = (addr == 0x139);
+      if (!block_msg) {
+        bus_fwd = 2;  // Camera CAN
+      }
+    }
+    if (bus_num == 2) {
+      // Global platform
+      // 0x122 ES_LKAS
+      // 0x322 ES_LKAS_State
+      int addr = GET_ADDR(to_fwd);
+      int block_msg = ((addr == 0x122) || (addr == 0x322));
+      if (!block_msg) {
+        bus_fwd = 0;  // Main CAN
+      }
+    }
+  }
+  // fallback to do not forward
+  return bus_fwd;
+}
+
 const safety_hooks subaru_hooks = {
   .init = nooutput_init,
   .rx = subaru_rx_hook,
@@ -181,4 +286,14 @@ const safety_hooks subaru_hooks = {
   .fwd = subaru_fwd_hook,
   .addr_check = subaru_rx_checks,
   .addr_check_len = sizeof(subaru_rx_checks) / sizeof(subaru_rx_checks[0]),
+};
+
+const safety_hooks subaru_gen2_hooks = {
+  .init = nooutput_init,
+  .rx = subaru_gen2_rx_hook,
+  .tx = subaru_tx_hook,
+  .tx_lin = nooutput_tx_lin_hook,
+  .fwd = subaru_gen2_fwd_hook,
+  .addr_check = subaru_gen2_rx_checks,
+  .addr_check_len = sizeof(subaru_gen2_rx_checks) / sizeof(subaru_gen2_rx_checks[0]),
 };
