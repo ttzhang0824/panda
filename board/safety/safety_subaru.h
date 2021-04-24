@@ -255,6 +255,7 @@ static int subaru_gen2_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 
 static int subaru_gen2_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   int bus_fwd = -1;
+  int addr = GET_ADDR(to_fwd);
 
   if (!relay_malfunction) {
     if (bus_num == 0) {
@@ -267,7 +268,6 @@ static int subaru_gen2_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       // Global platform
       // 0x122 ES_LKAS
       // 0x322 ES_LKAS_State
-      int addr = GET_ADDR(to_fwd);
       int block_msg = ((addr == 0x122) || (addr == 0x322));
       if (!block_msg) {
         bus_fwd = 0;  // Main CAN
