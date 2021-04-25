@@ -31,7 +31,6 @@ AddrCheckStruct subaru_gen2_rx_checks[] = {
   {.msg = {{0x139, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
   {.msg = {{0x13a, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
   {.msg = {{0x240, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 50000U}}},
-  {.msg = {{0x321, 2, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 100000U}}},
 };
 const int SUBARU_GEN2_RX_CHECK_LEN = sizeof(subaru_gen2_rx_checks) / sizeof(subaru_gen2_rx_checks[0]);
 
@@ -268,6 +267,82 @@ static int subaru_gen2_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
   return valid;
 }
 
+static int subaru_gen2_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
+  int tx = 1;
+  int addr = GET_ADDR(to_send);
+
+  if (!msg_allowed(to_send, SUBARU_GEN2_TX_MSGS, SUBARU_GEN2_TX_MSGS_LEN)) {
+    tx = 0;
+  }
+
+  if (relay_malfunction) {
+    tx = 0;
+  }
+
+  // steer cmd checks
+  if (addr == 0x122) {
+    int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x1FFF);
+    bool violation = 0;
+    uint32_t ts = TIM2->CNT;
+
+    desired_torque = -1 * to_signed(desired_torque, 13);
+
+    if (controls_allowed) {
+
+      if (subaru_max_steer_2020) {
+        // *** global torque limit check ***
+        violation |= max_limit_check(desired_torque, SUBARU_MAX_STEER_2020, -SUBARU_MAX_STEER_2020);
+
+        // *** torque rate limit check ***
+        violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
+          SUBARU_MAX_STEER_2020, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
+          SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
+      }
+      else {
+        // *** global torque limit check ***
+        violation |= max_limit_check(desired_torque, SUBARU_MAX_STEER, -SUBARU_MAX_STEER);
+
+        // *** torque rate limit check ***
+        violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
+          SUBARU_MAX_STEER, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
+          SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
+      }
+
+      // used next time
+      desired_torque_last = desired_torque;
+
+      // *** torque real time rate limit check ***
+      violation |= rt_rate_limit_check(desired_torque, rt_torque_last, SUBARU_MAX_RT_DELTA);
+
+      // every RT_INTERVAL set the new limits
+      uint32_t ts_elapsed = get_ts_elapsed(ts, ts_last);
+      if (ts_elapsed > SUBARU_RT_INTERVAL) {
+        rt_torque_last = desired_torque;
+        ts_last = ts;
+      }
+    }
+
+    // no torque if controls is not allowed
+    if (!controls_allowed && (desired_torque != 0)) {
+      violation = 1;
+    }
+
+    // reset to 0 if either controls is not allowed or there's a violation
+    if (violation || !controls_allowed) {
+      desired_torque_last = 0;
+      rt_torque_last = 0;
+      ts_last = ts;
+    }
+
+    if (violation) {
+      tx = 0;
+    }
+
+  }
+  return tx;
+}
+
+
 static int subaru_gen2_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   int bus_fwd = -1;
   int addr = GET_ADDR(to_fwd);
@@ -313,7 +388,7 @@ const safety_hooks subaru_hooks = {
 const safety_hooks subaru_gen2_hooks = {
   .init = subaru_init,
   .rx = subaru_gen2_rx_hook,
-  .tx = subaru_tx_hook,
+  .tx = subaru_gen2_tx_hook,
   .tx_lin = nooutput_tx_lin_hook,
   .fwd = subaru_gen2_fwd_hook,
   .addr_check = subaru_gen2_rx_checks,
