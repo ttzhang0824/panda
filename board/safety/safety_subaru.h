@@ -30,6 +30,7 @@ AddrCheckStruct subaru_gen2_rx_checks[] = {
   {.msg = {{0x119, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
   {.msg = {{0x139, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
   {.msg = {{0x13a, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
+  {.msg = {{0x13c, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}}},
   {.msg = {{0x240, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 50000U}}},
 };
 const int SUBARU_GEN2_RX_CHECK_LEN = sizeof(subaru_gen2_rx_checks) / sizeof(subaru_gen2_rx_checks[0]);
@@ -236,18 +237,18 @@ static int subaru_gen2_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       subaru_speed /= 2;
       vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
     }
-  }
 
-  if (valid && (GET_BUS(to_push) == 0)) {
-    if (addr == 0x139) {
-      brake_pressed = (GET_BYTES_48(to_push) & 0xFFF0) > 0;
+    if (addr == 0x13c) {
+      brake_pressed = ((GET_BYTES_48(to_push) >> 30) & 1);
     }
     // exit controls on rising edge of brake press
     if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
       controls_allowed = 0;
     }
     brake_pressed_prev = brake_pressed;
+  }
 
+  if (valid && (GET_BUS(to_push) == 0)) {
     if (addr == 0x40) {
       gas_pressed = GET_BYTE(to_push, 4) != 0;
     }
