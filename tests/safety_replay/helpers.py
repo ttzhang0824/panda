@@ -68,9 +68,9 @@ def set_desired_torque_last(safety, mode, torque):
   elif mode == Panda.SAFETY_SUBARU:
     safety.set_subaru_desired_torque_last(torque)
   elif mode == Panda.SAFETY_SUBARU_GEN2:
-    safety.set_subaru_desired_torque_last(torque)
+    safety.set_subaru_gen2_desired_torque_last(torque)
   elif mode == Panda.SAFETY_SUBARU_LEGACY:
-    safety.set_subaru_desired_torque_last(torque)
+    safety.set_subaru_legacy_desired_torque_last(torque)
 
 def package_can_msg(msg):
   rdlr, rdhr = struct.unpack('II', msg.dat.ljust(8, b'\x00'))
