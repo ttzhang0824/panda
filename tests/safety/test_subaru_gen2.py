@@ -28,7 +28,7 @@ class TestSubaruGen2Safety(common.PandaSafetyTest):
   STANDSTILL_THRESHOLD = 20  # 1kph (see dbc file)
   RELAY_MALFUNCTION_ADDR = 0x122
   RELAY_MALFUNCTION_BUS = 0
-  FWD_BLACKLISTED_ADDRS = {0: [0x40], 0: [0x139], 2: [0x122, 0x322]}
+  FWD_BLACKLISTED_ADDRS = {0: [0x40], [0x139], 2: [0x122, 0x322]}
   FWD_BUS_LOOKUP = {0: 2, 2: 0}
 
   def setUp(self):
