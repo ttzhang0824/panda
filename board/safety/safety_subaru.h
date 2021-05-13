@@ -35,6 +35,16 @@ AddrCheckStruct subaru_gen2_rx_checks[] = {
 };
 const int SUBARU_GEN2_RX_CHECK_LEN = sizeof(subaru_gen2_rx_checks) / sizeof(subaru_gen2_rx_checks[0]);
 
+AddrCheckStruct subaru_hybrid_rx_checks[] = {
+  {.msg = {{0x119, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep =  20000U}}},
+  {.msg = {{0x139, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep =  20000U}}},
+  {.msg = {{0x13a, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep =  20000U}}},
+  {.msg = {{0x168, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep =  40000U}}},
+  {.msg = {{0x321, 2, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 100000U}}},
+};
+const int SUBARU_HYBRID_RX_CHECK_LEN = sizeof(subaru_hybrid_rx_checks) / sizeof(subaru_hybrid_rx_checks[0]);
+
+
 const uint16_t SUBARU_PARAM_MAX_STEER_2020 = 1;
 bool subaru_max_steer_2020 = false;
 
@@ -290,24 +300,13 @@ static int subaru_gen2_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 
     if (controls_allowed) {
 
-      if (subaru_max_steer_2020) {
-        // *** global torque limit check ***
-        violation |= max_limit_check(desired_torque, SUBARU_MAX_STEER_2020, -SUBARU_MAX_STEER_2020);
+      // *** global torque limit check ***
+      violation |= max_limit_check(desired_torque, SUBARU_MAX_STEER, -SUBARU_MAX_STEER);
 
-        // *** torque rate limit check ***
-        violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
-          SUBARU_MAX_STEER_2020, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
-          SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
-      }
-      else {
-        // *** global torque limit check ***
-        violation |= max_limit_check(desired_torque, SUBARU_MAX_STEER, -SUBARU_MAX_STEER);
-
-        // *** torque rate limit check ***
-        violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
-          SUBARU_MAX_STEER, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
-          SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
-      }
+      // *** torque rate limit check ***
+      violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
+        SUBARU_MAX_STEER, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
+        SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
 
       // used next time
       desired_torque_last = desired_torque;
@@ -369,6 +368,72 @@ static int subaru_gen2_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   return bus_fwd;
 }
 
+// hybrid
+static int subaru_hybrid_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
+
+  bool valid = addr_safety_check(to_push, subaru_hybrid_rx_checks, SUBARU_HYBRID_RX_CHECK_LEN,
+                            subaru_get_checksum, subaru_compute_checksum, subaru_get_counter);
+  int addr = GET_ADDR(to_push);
+
+  if (valid && (GET_BUS(to_push) == 0)) {
+    if (addr == 0x119) {
+      int torque_driver_new;
+      torque_driver_new = ((GET_BYTES_04(to_push) >> 16) & 0x7FF);
+      torque_driver_new = -1 * to_signed(torque_driver_new, 11);
+      update_sample(&torque_driver, torque_driver_new);
+    }
+
+    // sample subaru wheel speed, averaging opposite corners (Wheel_Speeds)
+    if (addr == 0x13a) {
+      int subaru_speed = (GET_BYTES_04(to_push) >> 12) & 0x1FFF;  // FR
+      subaru_speed += (GET_BYTES_48(to_push) >> 6) & 0x1FFF;  // RL
+      subaru_speed /= 2;
+      vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
+    }
+
+    // exit controls on rising edge of brake press (Brake_Status)
+    if (addr == 0x13c) {
+      brake_pressed = ((GET_BYTES_48(to_push) >> 30) & 1);
+      if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
+        controls_allowed = 0;
+      }
+      brake_pressed_prev = brake_pressed;
+    }
+
+    // check if stock ECU is on bus broken by car harness
+    if ((safety_mode_cnt > RELAY_TRNS_TIMEOUT) && (addr == 0x122)) {
+      relay_malfunction_set();
+    }
+  }
+  if (valid && (GET_BUS(to_push) == 1)) {
+    // exit controls on rising edge of gas press (Throttle_Hybrid)
+    if (addr == 0x168) {
+      gas_pressed = GET_BYTE(to_push, 4) != 0;
+      if (gas_pressed && !gas_pressed_prev && !(unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS)) {
+        controls_allowed = 0;
+      }
+      gas_pressed_prev = gas_pressed;
+    }
+  }
+  if (valid && (GET_BUS(to_push) == 2)) {
+    // enter controls on rising edge of ACC, exit controls on ACC off (ES_DashStatus)
+    if (addr == 0x321) {
+      int cruise_engaged = ((GET_BYTES_48(to_push) >> 4) & 1);
+      if (cruise_engaged && !cruise_engaged_prev) {
+        controls_allowed = 1;
+      }
+      if (!cruise_engaged) {
+        controls_allowed = 0;
+      }
+      cruise_engaged_prev = cruise_engaged;
+    }
+  }
+
+  return valid;
+}
+
+
+
 static void subaru_init(int16_t param) {
   controls_allowed = false;
   relay_malfunction_reset();
@@ -387,11 +452,21 @@ const safety_hooks subaru_hooks = {
 };
 
 const safety_hooks subaru_gen2_hooks = {
-  .init = subaru_init,
+  .init = nooutput_init,
   .rx = subaru_gen2_rx_hook,
   .tx = subaru_gen2_tx_hook,
   .tx_lin = nooutput_tx_lin_hook,
   .fwd = subaru_gen2_fwd_hook,
   .addr_check = subaru_gen2_rx_checks,
   .addr_check_len = sizeof(subaru_gen2_rx_checks) / sizeof(subaru_gen2_rx_checks[0]),
+};
+
+const safety_hooks subaru_hybrid_hooks = {
+  .init = nooutput_init,
+  .rx = subaru_hybrid_rx_hook,
+  .tx = subaru_gen2_tx_hook,
+  .tx_lin = nooutput_tx_lin_hook,
+  .fwd = subaru_gen2_fwd_hook,
+  .addr_check = subaru_hybrid_rx_checks,
+  .addr_check_len = sizeof(subaru_hybrid_rx_checks) / sizeof(subaru_hybrid_rx_checks[0]),
 };
