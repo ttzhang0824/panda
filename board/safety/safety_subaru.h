@@ -392,6 +392,13 @@ static int subaru_hybrid_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
     }
 
+    // check if stock ECU is on bus broken by car harness
+    if ((safety_mode_cnt > RELAY_TRNS_TIMEOUT) && (addr == 0x122)) {
+      relay_malfunction_set();
+    }
+  }
+  if (valid && (GET_BUS(to_push) == 1)) {
+
     // exit controls on rising edge of brake press (Brake_Hybrid)
     if (addr == 0x226) {
       brake_pressed = ((GET_BYTES_48(to_push) >> 5) & 1);
@@ -401,12 +408,6 @@ static int subaru_hybrid_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       brake_pressed_prev = brake_pressed;
     }
 
-    // check if stock ECU is on bus broken by car harness
-    if ((safety_mode_cnt > RELAY_TRNS_TIMEOUT) && (addr == 0x122)) {
-      relay_malfunction_set();
-    }
-  }
-  if (valid && (GET_BUS(to_push) == 1)) {
     // exit controls on rising edge of gas press (Throttle_Hybrid)
     if (addr == 0x168) {
       gas_pressed = GET_BYTE(to_push, 4) != 0;
