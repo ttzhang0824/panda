@@ -40,6 +40,7 @@ AddrCheckStruct subaru_hybrid_rx_checks[] = {
   {.msg = {{0x139, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep =  20000U}}},
   {.msg = {{0x13a, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep =  20000U}}},
   {.msg = {{0x168, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep =  40000U}}},
+  {.msg = {{0x226, 1, 8, .expected_timestep = 40000U}}},
   {.msg = {{0x321, 2, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 100000U}}},
 };
 const int SUBARU_HYBRID_RX_CHECK_LEN = sizeof(subaru_hybrid_rx_checks) / sizeof(subaru_hybrid_rx_checks[0]);
@@ -391,9 +392,9 @@ static int subaru_hybrid_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
     }
 
-    // exit controls on rising edge of brake press (Brake_Status)
-    if (addr == 0x13c) {
-      brake_pressed = ((GET_BYTES_48(to_push) >> 30) & 1);
+    // exit controls on rising edge of brake press (Brake_Hybrid)
+    if (addr == 0x226) {
+      brake_pressed = ((GET_BYTES_48(to_push) >> 5) & 1);
       if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
         controls_allowed = 0;
       }
