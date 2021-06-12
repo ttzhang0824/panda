@@ -63,9 +63,9 @@ RUN cd /tmp && \
     cd /tmp/tmppilot && \
     git fetch && \
     git checkout b135ef4d1f2a6131b98bdc5d08066183c79b2072 && \
-    git submodule update --init cereal opendbc && \
+    git submodule update --init cereal opendbc rednose_repo && \
     mkdir /tmp/openpilot && \
-    cp -pR SConstruct site_scons/ tools/ selfdrive/ common/ cereal/ opendbc/ /tmp/openpilot && \
+    cp -pR SConstruct site_scons/ tools/ selfdrive/ common/ cereal/ opendbc/ rednose/ /tmp/openpilot && \
     rm -rf /tmp/tmppilot
 
 RUN cd /tmp/openpilot && \
