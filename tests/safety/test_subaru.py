@@ -202,8 +202,8 @@ class TestSubaruGen2Safety(TestSubaruSafety):
     return self.packer.make_can_msg_panda("CruiseControl", 1, values)
 
 class TestSubaruHybridSafety(TestSubaruSafety):
-  TX_MSGS = [[0x122, 0], [0x322, 0], [0x139, 2]]
-  FWD_BLACKLISTED_ADDRS = {0: [0x139], 2: [0x122, 0x322]}
+  TX_MSGS = [[0x122, 0], [0x321, 0], [0x322, 0], [0x139, 2]]
+  FWD_BLACKLISTED_ADDRS = {0: [0x139], 2: [0x122, 0x321, 0x322]}
 
   def setUp(self):
     self.packer = CANPackerPanda("subaru_global_2020_hybrid_generated")
