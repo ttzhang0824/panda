@@ -103,7 +103,7 @@ static int subaru_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     }
 
     if (addr == 0x13c) {
-      brake_pressed = ((GET_BYTES_48(to_push) >> 30) & 1);
+      brake_pressed = ((GET_BYTE(to_push, 7) >> 6) & 1);
     }
 
     if (addr == 0x40) {
@@ -257,7 +257,7 @@ static int subaru_gen2_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     }
 
     if (addr == 0x13c) {
-      brake_pressed = ((GET_BYTES_48(to_push) >> 30) & 1);
+      brake_pressed = ((GET_BYTE(to_push, 7) >> 6) & 1);
     }
     // exit controls on rising edge of brake press
     if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
