@@ -23,11 +23,11 @@ class TestSubaruSafety(common.PandaSafetyTest):
   cnt_speed = 0
   cnt_brake = 0
 
-  TX_MSGS = [[0x122, 0], [0x221, 0], [0x321, 0], [0x322, 0]]
+  TX_MSGS = [[0x122, 0], [0x221, 0], [0x321, 0], [0x322, 0], [0x40, 2], [0x139, 2]]
   STANDSTILL_THRESHOLD = 20  # 1kph (see dbc file)
   RELAY_MALFUNCTION_ADDR = 0x122
   RELAY_MALFUNCTION_BUS = 0
-  FWD_BLACKLISTED_ADDRS = {2: [0x122, 0x221, 0x321, 0x322]}
+  FWD_BLACKLISTED_ADDRS = {0: [0x40, 0x139], 2: [0x122, 0x221, 0x321, 0x322]}
   FWD_BUS_LOOKUP = {0: 2, 2: 0}
 
   MAX_STEER = 2047
@@ -175,8 +175,8 @@ class TestSubaru2020Safety(TestSubaruSafety):
     self.safety.init_tests()
 
 class TestSubaruGen2Safety(TestSubaruSafety):
-  TX_MSGS = [[0x122, 0], [0x321, 0], [0x322, 0], [0x139, 2]]
-  FWD_BLACKLISTED_ADDRS = {0: [0x139], 2: [0x122, 0x321, 0x322]}
+  TX_MSGS = [[0x122, 0], [0x321, 0], [0x322, 0], [0x40, 2], [0x139, 2]]
+  FWD_BLACKLISTED_ADDRS = {0: [0x40, 0x139], 2: [0x122, 0x321, 0x322]}
 
   def setUp(self):
     self.packer = CANPackerPanda("subaru_global_2017_generated")
@@ -202,8 +202,8 @@ class TestSubaruGen2Safety(TestSubaruSafety):
     return self.packer.make_can_msg_panda("CruiseControl", 1, values)
 
 class TestSubaruHybridSafety(TestSubaruSafety):
-  TX_MSGS = [[0x122, 0], [0x321, 0], [0x322, 0], [0x139, 2]]
-  FWD_BLACKLISTED_ADDRS = {0: [0x139], 2: [0x122, 0x321, 0x322]}
+  TX_MSGS = [[0x122, 0], [0x321, 0], [0x322, 0], [0x40, 2], [0x139, 2]]
+  FWD_BLACKLISTED_ADDRS = {0: [0x40, 0x139], 2: [0x122, 0x321, 0x322]}
 
   def setUp(self):
     self.packer = CANPackerPanda("subaru_global_2020_hybrid_generated")
