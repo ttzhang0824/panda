@@ -131,7 +131,7 @@ static int subaru_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   if (addr == 0x122) {
     int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x1FFF);
     bool violation = 0;
-    uint32_t ts = TIM2->CNT;
+    uint32_t ts = MICROSECOND_TIMER->CNT;
 
     desired_torque = -1 * to_signed(desired_torque, 13);
 
@@ -303,7 +303,7 @@ static int subaru_gen2_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   if (addr == 0x122) {
     int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x1FFF);
     bool violation = 0;
-    uint32_t ts = TIM2->CNT;
+    uint32_t ts = MICROSECOND_TIMER->CNT;
 
     desired_torque = -1 * to_signed(desired_torque, 13);
 
