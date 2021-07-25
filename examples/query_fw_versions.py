@@ -61,7 +61,7 @@ if __name__ == "__main__":
           data = uds_client.read_data_by_identifier(uds_data_id)  # type: ignore
           if data:
             resp[uds_data_id] = data
-        except (NegativeResponseError, MessageTimeoutError):
+        except (NegativeResponseError, MessageTimeoutError, AssertionError, ValueError):
           pass
 
       if resp.keys():
