@@ -20,7 +20,7 @@ AddrCheckStruct subaru_l_addr_checks[] = {
   {.msg = {{0x144, 0, 8, .expected_timestep = 50000U}, { 0 }, { 0 }}},
 };
 #define SUBARU_L_ADDR_CHECK_LEN (sizeof(subaru_l_addr_checks) / sizeof(subaru_l_addr_checks[0]))
-addr_checks subaru_l_rx_checks = {subaru_addr_checks, SUBARU_L_ADDR_CHECK_LEN};
+addr_checks subaru_l_rx_checks = {subaru_l_addr_checks, SUBARU_L_ADDR_CHECK_LEN};
 
 
 // TODO add legacy checksum check
