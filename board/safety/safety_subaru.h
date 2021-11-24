@@ -325,6 +325,7 @@ static int subaru_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
     if (!block_msg) {
       bus_fwd = 2;  // Camera CAN
     }
+  }
   if (bus_num == 2) {
     // Global platform
     // 0x122 ES_LKAS
