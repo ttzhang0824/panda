@@ -396,8 +396,7 @@ static int subaru_gen2_rx_hook(CANPacket_t *to_push) {
 
     // sample wheel speed, averaging opposite corners
     if (addr == 0x13a) {
-      int subaru_speed = (GET_BYTES_04(to_push) >> 12) & 0x1FFFU;  // FR
-      subaru_speed += (GET_BYTES_48(to_push) >> 6) & 0x1FFFU;  // RL
+      int subaru_speed = ((GET_BYTES_04(to_push) >> 12) & 0x1FFFU) + ((GET_BYTES_48(to_push) >> 6) & 0x1FFFU);  // FR + RL
       subaru_speed /= 2;
       vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
     }
@@ -537,8 +536,7 @@ static int subaru_hybrid_rx_hook(CANPacket_t *to_push) {
 
     // sample subaru wheel speed, averaging opposite corners (Wheel_Speeds)
     if (addr == 0x13a) {
-      int subaru_speed = (GET_BYTES_04(to_push) >> 12) & 0x1FFFU;  // FR
-      subaru_speed += (GET_BYTES_48(to_push) >> 6) & 0x1FFFU;  // RL
+      int subaru_speed = ((GET_BYTES_04(to_push) >> 12) & 0x1FFFU) + ((GET_BYTES_48(to_push) >> 6) & 0x1FFFU);  // FR + RL
       subaru_speed /= 2;
       vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
     }
