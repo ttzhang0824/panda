@@ -372,19 +372,19 @@ static int subaru_gen2_rx_hook(CANPacket_t *to_push) {
                             subaru_get_checksum, subaru_compute_checksum, subaru_get_counter);
   int addr = GET_ADDR(to_push);
 
-  if (valid && (GET_BUS(to_push) == 0)) {
+  if (valid && (GET_BUS(to_push) == 0U)) {
     if (addr == 0x119) {
       int torque_driver_new;
-      torque_driver_new = ((GET_BYTES_04(to_push) >> 16) & 0x7FF);
+      torque_driver_new = ((GET_BYTES_04(to_push) >> 16) & 0x7FFU);
       torque_driver_new = -1 * to_signed(torque_driver_new, 11);
       update_sample(&torque_driver, torque_driver_new);
     }
   }
 
-  if (valid && (GET_BUS(to_push) == 1)) {
+  if (valid && (GET_BUS(to_push) == 1U)) {
     // enter controls on rising edge of ACC, exit controls on ACC off
     if (addr == 0x240) {
-      int cruise_engaged = ((GET_BYTES_48(to_push) >> 9) & 1);
+      int cruise_engaged = ((GET_BYTES_48(to_push) >> 9) & 1U);
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
       }
@@ -396,14 +396,14 @@ static int subaru_gen2_rx_hook(CANPacket_t *to_push) {
 
     // sample wheel speed, averaging opposite corners
     if (addr == 0x13a) {
-      int subaru_speed = (GET_BYTES_04(to_push) >> 12) & 0x1FFF;  // FR
-      subaru_speed += (GET_BYTES_48(to_push) >> 6) & 0x1FFF;  // RL
+      int subaru_speed = (GET_BYTES_04(to_push) >> 12) & 0x1FFFU;  // FR
+      subaru_speed += (GET_BYTES_48(to_push) >> 6) & 0x1FFFU;  // RL
       subaru_speed /= 2;
       vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
     }
 
     if (addr == 0x13c) {
-      brake_pressed = ((GET_BYTE(to_push, 7) >> 6) & 1);
+      brake_pressed = ((GET_BYTE(to_push, 7) >> 6) & 1U);
     }
     // exit controls on rising edge of brake press
     if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
@@ -412,9 +412,9 @@ static int subaru_gen2_rx_hook(CANPacket_t *to_push) {
     brake_pressed_prev = brake_pressed;
   }
 
-  if (valid && (GET_BUS(to_push) == 0)) {
+  if (valid && (GET_BUS(to_push) == 0U)) {
     if (addr == 0x40) {
-      gas_pressed = GET_BYTE(to_push, 4) != 0;
+      gas_pressed = GET_BYTE(to_push, 4) != 0U;
     }
     // exit controls on rising edge of gas press
     if (gas_pressed && !gas_pressed_prev && !(unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS)) {
@@ -442,7 +442,7 @@ static int subaru_gen2_tx_hook(CANPacket_t *to_send) {
 
   // steer cmd checks
   if (addr == 0x122) {
-    int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x1FFF);
+    int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x1FFFU);
     bool violation = 0;
     uint32_t ts = microsecond_timer_get();
 
@@ -527,18 +527,18 @@ static int subaru_hybrid_rx_hook(CANPacket_t *to_push) {
                             subaru_get_checksum, subaru_compute_checksum, subaru_get_counter);
   int addr = GET_ADDR(to_push);
 
-  if (valid && (GET_BUS(to_push) == 0)) {
+  if (valid && (GET_BUS(to_push) == 0U)) {
     if (addr == 0x119) {
       int torque_driver_new;
-      torque_driver_new = ((GET_BYTES_04(to_push) >> 16) & 0x7FF);
+      torque_driver_new = ((GET_BYTES_04(to_push) >> 16) & 0x7FFU);
       torque_driver_new = -1 * to_signed(torque_driver_new, 11);
       update_sample(&torque_driver, torque_driver_new);
     }
 
     // sample subaru wheel speed, averaging opposite corners (Wheel_Speeds)
     if (addr == 0x13a) {
-      int subaru_speed = (GET_BYTES_04(to_push) >> 12) & 0x1FFF;  // FR
-      subaru_speed += (GET_BYTES_48(to_push) >> 6) & 0x1FFF;  // RL
+      int subaru_speed = (GET_BYTES_04(to_push) >> 12) & 0x1FFFU;  // FR
+      subaru_speed += (GET_BYTES_48(to_push) >> 6) & 0x1FFFU;  // RL
       subaru_speed /= 2;
       vehicle_moving = subaru_speed > SUBARU_STANDSTILL_THRSLD;
     }
@@ -548,11 +548,11 @@ static int subaru_hybrid_rx_hook(CANPacket_t *to_push) {
       relay_malfunction_set();
     }
   }
-  if (valid && (GET_BUS(to_push) == 1)) {
+  if (valid && (GET_BUS(to_push) == 1U)) {
 
     // exit controls on rising edge of brake press (Brake_Hybrid)
     if (addr == 0x226) {
-      brake_pressed = ((GET_BYTES_48(to_push) >> 5) & 1);
+      brake_pressed = ((GET_BYTES_48(to_push) >> 5) & 1U);
       if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
         controls_allowed = 0;
       }
@@ -561,17 +561,17 @@ static int subaru_hybrid_rx_hook(CANPacket_t *to_push) {
 
     // exit controls on rising edge of gas press (Throttle_Hybrid)
     if (addr == 0x168) {
-      gas_pressed = GET_BYTE(to_push, 4) != 0;
+      gas_pressed = GET_BYTE(to_push, 4) != 0U;
       if (gas_pressed && !gas_pressed_prev && !(unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS)) {
         controls_allowed = 0;
       }
       gas_pressed_prev = gas_pressed;
     }
   }
-  if (valid && (GET_BUS(to_push) == 2)) {
+  if (valid && (GET_BUS(to_push) == 2U)) {
     // enter controls on rising edge of ACC, exit controls on ACC off (ES_DashStatus)
     if (addr == 0x321) {
-      int cruise_engaged = ((GET_BYTES_48(to_push) >> 4) & 1);
+      int cruise_engaged = ((GET_BYTES_48(to_push) >> 4) & 1U);
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
       }
