@@ -570,10 +570,9 @@ static int subaru_hybrid_rx_hook(CANPacket_t *to_push) {
 
 
 static const addr_checks* subaru_init(int16_t param) {
+  UNUSED(param);
   controls_allowed = false;
   relay_malfunction_reset();
-  // Checking for lower max steer from safety parameter
-  subaru_max_steer_2020 = GET_FLAG(param, SUBARU_PARAM_MAX_STEER_2020);
   return &subaru_rx_checks;
 }
 
