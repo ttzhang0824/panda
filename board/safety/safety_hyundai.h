@@ -364,16 +364,18 @@ static int hyundai_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
   return bus_fwd;
 }
 
-static const addr_checks* hyundai_init(int16_t param) {
+static const addr_checks* hyundai_common_init(int16_t param, bool legacy) {
   controls_allowed = false;
   relay_malfunction_reset();
 
-  hyundai_legacy = false;
+  hyundai_legacy = legacy;
   hyundai_ev_gas_signal = GET_FLAG(param, HYUNDAI_PARAM_EV_GAS);
   hyundai_hybrid_gas_signal = !hyundai_ev_gas_signal && GET_FLAG(param, HYUNDAI_PARAM_HYBRID_GAS);
 
 #ifdef ALLOW_DEBUG
   hyundai_longitudinal = GET_FLAG(param, HYUNDAI_PARAM_LONGITUDINAL);
+#else
+  hyundai_longitudinal = false;
 #endif
 
   if (hyundai_longitudinal) {
@@ -382,18 +384,15 @@ static const addr_checks* hyundai_init(int16_t param) {
     hyundai_rx_checks = (addr_checks){hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
   }
   return &hyundai_rx_checks;
+
+}
+
+static const addr_checks* hyundai_init(int16_t param) {
+  return hyundai_common_init(param, false);
 }
 
 static const addr_checks* hyundai_legacy_init(int16_t param) {
-  controls_allowed = false;
-  relay_malfunction_reset();
-
-  hyundai_legacy = true;
-  hyundai_longitudinal = false;
-  hyundai_ev_gas_signal = GET_FLAG(param, HYUNDAI_PARAM_EV_GAS);
-  hyundai_hybrid_gas_signal = !hyundai_ev_gas_signal && GET_FLAG(param, HYUNDAI_PARAM_HYBRID_GAS);
-  hyundai_rx_checks = (addr_checks){hyundai_legacy_addr_checks, HYUNDAI_LEGACY_ADDR_CHECK_LEN};
-  return &hyundai_rx_checks;
+  return hyundai_common_init(param, true);
 }
 
 const safety_hooks hyundai_hooks = {
