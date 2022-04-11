@@ -405,7 +405,7 @@ static int subaru_gen2_rx_hook(CANPacket_t *to_push) {
       gas_pressed = GET_BYTE(to_push, 4) != 0U;
     }
     // exit controls on rising edge of gas press
-    if (gas_pressed && !gas_pressed_prev && !(unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS)) {
+    if (gas_pressed && !gas_pressed_prev && !(alternative_experience & ALT_EXP_DISABLE_DISENGAGE_ON_GAS)) {
       controls_allowed = 0;
     }
     gas_pressed_prev = gas_pressed;
@@ -549,7 +549,7 @@ static int subaru_hybrid_rx_hook(CANPacket_t *to_push) {
     // exit controls on rising edge of gas press (Throttle_Hybrid)
     if (addr == 0x168) {
       gas_pressed = GET_BYTE(to_push, 4) != 0U;
-      if (gas_pressed && !gas_pressed_prev && !(unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS)) {
+      if (gas_pressed && !gas_pressed_prev && !(alternative_experience & ALT_EXP_DISABLE_DISENGAGE_ON_GAS)) {
         controls_allowed = 0;
       }
       gas_pressed_prev = gas_pressed;
