@@ -181,7 +181,7 @@ class TestSubaruGen2Safety(TestSubaruSafety):
     self.__class__.cnt_speed += 1
     return self.packer.make_can_msg_panda("Wheel_Speeds", 1, values)
 
-  def _brake_msg(self, brake):
+  def _user_brake_msg(self, brake):
     values = {"Brake": brake, "Counter": self.cnt_brake % 4}
     self.__class__.cnt_brake += 1
     return self.packer.make_can_msg_panda("Brake_Status", 1, values)
@@ -201,11 +201,11 @@ class TestSubaruHybridSafety(TestSubaruSafety):
     self.safety.set_safety_hooks(Panda.SAFETY_SUBARU_HYBRID, 0)
     self.safety.init_tests()
 
-  def _brake_msg(self, brake):
+  def _user_brake_msg(self, brake):
     values = {"Brake": brake}
     return self.packer.make_can_msg_panda("Brake_Hybrid", 1, values)
 
-  def _gas_msg(self, gas):
+  def _user_gas_msg(self, gas):
     values = {"Throttle_Pedal": gas, "Counter": self.cnt_gas % 4}
     self.__class__.cnt_gas += 1
     return self.packer.make_can_msg_panda("Throttle_Hybrid", 1, values)
