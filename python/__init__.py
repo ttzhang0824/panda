@@ -182,6 +182,10 @@ class Panda(object):
   CLOCK_SOURCE_MODE_DISABLED = 0
   CLOCK_SOURCE_MODE_FREE_RUNNING = 1
 
+  # first byte is for EPS scaling factor
+  FLAG_TOYOTA_ALT_BRAKE = (1 << 8)
+  FLAG_TOYOTA_STOCK_LONGITUDINAL = (2 << 8)
+
   FLAG_HONDA_ALT_BRAKE = 1
   FLAG_HONDA_BOSCH_LONG = 2
   FLAG_HONDA_NIDEC_ALT = 4
@@ -189,6 +193,7 @@ class Panda(object):
   FLAG_HYUNDAI_EV_GAS = 1
   FLAG_HYUNDAI_HYBRID_GAS = 2
   FLAG_HYUNDAI_LONG = 4
+
   FLAG_TESLA_POWERTRAIN = 1
   FLAG_TESLA_LONG_CONTROL = 2
 
@@ -325,9 +330,11 @@ class Panda(object):
     if reconnect:
       self.reconnect()
 
-  def recover(self, timeout=None):
-    self.reset(enter_bootstub=True)
-    self.reset(enter_bootloader=True)
+  def recover(self, timeout=None, reset=True):
+    if reset:
+      self.reset(enter_bootstub=True)
+      self.reset(enter_bootloader=True)
+
     t_start = time.time()
     while len(PandaDFU.list()) == 0:
       print("waiting for DFU...")
