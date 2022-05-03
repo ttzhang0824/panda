@@ -712,7 +712,24 @@ void TIM1_BRK_TIM9_IRQ_Handler(void) {
         heartbeat_counter += 1U;
       }
 
-      #ifdef EON
+      // Send radar points msg
+      void send_id(uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1, uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2) {
+        uint8_t dat[8];
+        dat[0] = 0x00;
+        dat[1] = (acc_obj_rel_spd_2 >> 8);
+        dat[2] = (acc_obj_rel_spd_1) | (acc_obj_dist_2 >> 4);
+        dat[3] = (acc_obj_dist_1) | (acc_obj_lat_pos_2 >> 1);
+        dat[4] = (acc_obj_lat_pos_1);
+        dat[5] = (obj_valid >> 1);
+        dat[6] = 0x00;
+        dat[7] = 0x00;
+        CAN1->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+        CAN1->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+        CAN1->sTxMailBox[0].TDTR = 8;
+        CAN1->sTxMailBox[0].TIR = (0x2AAU << 21) | 1U;
+      }
+
+      #ifdef EONESCC
       // check heartbeat counter if we are running EON code.
       // if the heartbeat has been gone for a while, go to SILENT safety mode and enter power save
       if (heartbeat_counter >= (check_started() ? EON_HEARTBEAT_IGNITION_CNT_ON : EON_HEARTBEAT_IGNITION_CNT_OFF)) {
@@ -834,7 +851,7 @@ int main(void) {
   // use TIM2->CNT to read
 
   // init to SILENT and can silent
-  set_safety_mode(SAFETY_SILENT, 0);
+  set_safety_mode(SAFETY_ALLOUTPUT, 0);
 
   // enable CAN TXs
   current_board->enable_can_transceivers(true);
