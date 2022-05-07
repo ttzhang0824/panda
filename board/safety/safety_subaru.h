@@ -575,21 +575,21 @@ static int subaru_hybrid_rx_hook(CANPacket_t *to_push) {
 }
 
 
-static const addr_checks* subaru_init(uint32_t param) {
+static const addr_checks* subaru_init(uint16_t param) {
   UNUSED(param);
   controls_allowed = false;
   relay_malfunction_reset();
   return &subaru_rx_checks;
 }
 
-static const addr_checks* subaru_gen2_init(uint32_t param) {
+static const addr_checks* subaru_gen2_init(uint16_t param) {
   UNUSED(param);
   controls_allowed = false;
   relay_malfunction_reset();
   return &subaru_gen2_rx_checks;
 }
 
-static const addr_checks* subaru_hybrid_init(uint32_t param) {
+static const addr_checks* subaru_hybrid_init(uint16_t param) {
   UNUSED(param);
   controls_allowed = false;
   relay_malfunction_reset();
@@ -605,7 +605,7 @@ const safety_hooks subaru_hooks = {
   .fwd = subaru_fwd_hook,
 };
 
-static const addr_checks* subaru_legacy_init(uint32_t param) {
+static const addr_checks* subaru_legacy_init(uint16_t param) {
   controls_allowed = false;
   relay_malfunction_reset();
   // Checking for flip driver torque from safety parameter
