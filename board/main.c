@@ -104,6 +104,23 @@ void debug_ring_callback(uart_ring *ring) {
   }
 }
 
+// Send radar points msg
+void send_id(uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1, uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2) {
+  uint8_t dat[8];
+  dat[0] = 0x00;
+  dat[1] = (acc_obj_rel_spd_2);
+  dat[2] = (acc_obj_rel_spd_1) | (acc_obj_dist_2);
+  dat[3] = (acc_obj_dist_1) | (acc_obj_lat_pos_2);
+  dat[4] = (acc_obj_lat_pos_1);
+  dat[5] = (obj_valid);
+  dat[6] = 0x00;
+  dat[7] = 0x00;
+  CAN1->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN1->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN1->sTxMailBox[0].TDTR = 8;
+  CAN1->sTxMailBox[0].TIR = (0x2AAU << 21) | 1U;
+}
+
 // ****************************** safety mode ******************************
 
 // this is the only way to leave silent mode
@@ -710,23 +727,6 @@ void TIM1_BRK_TIM9_IRQ_Handler(void) {
       // increase heartbeat counter and cap it at the uint32 limit
       if (heartbeat_counter < __UINT32_MAX__) {
         heartbeat_counter += 1U;
-      }
-
-      // Send radar points msg
-      void send_id(uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1, uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2) {
-        uint8_t dat[8];
-        dat[0] = 0x00;
-        dat[1] = (acc_obj_rel_spd_2);
-        dat[2] = (acc_obj_rel_spd_1) | (acc_obj_dist_2);
-        dat[3] = (acc_obj_dist_1) | (acc_obj_lat_pos_2);
-        dat[4] = (acc_obj_lat_pos_1);
-        dat[5] = (obj_valid);
-        dat[6] = 0x00;
-        dat[7] = 0x00;
-        CAN1->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
-        CAN1->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
-        CAN1->sTxMailBox[0].TDTR = 8;
-        CAN1->sTxMailBox[0].TIR = (0x2AAU << 21) | 1U;
       }
 
       #ifdef EONESCC

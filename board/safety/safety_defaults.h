@@ -5,7 +5,7 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 
 int block = 0;
 int override = 0;
-void send_id(void);
+void send_id(uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1, uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2);
 
 // *** no output safety mode ***
 
@@ -66,17 +66,17 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     }
     // FCA11: Detect FCW, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
     if (addr == 909) {
-      int CR_VSM_DecCmd = GET_BYTE(to_send, 1);
-      int FCA_CmdAct = GET_BIT(to_send, 20U);
-      int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
+      int CR_VSM_DecCmd = GET_BYTE(to_fwd, 1);
+      int FCA_CmdAct = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
+      int CF_VSM_DecCmdAct = (GET_BYTE(to_fwd, 3) >> 7) & 1U;
       if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
         aeb_fcw = 1;
       }
     }
     // SCC12: Detect AEB, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
     if (addr == 1057) {
-      int aeb_decel_cmd = GET_BYTE(to_send, 2);
-      int aeb_req = GET_BIT(to_send, 54U);
+      int aeb_decel_cmd = GET_BYTE(to_fwd, 2);
+      int aeb_req = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
       if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
         aeb_fcw = 1;
       }
