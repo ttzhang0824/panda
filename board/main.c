@@ -108,12 +108,12 @@ void debug_ring_callback(uart_ring *ring) {
 void send_id(uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1, uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2) {
   uint8_t dat[8];
   dat[0] = 0x00;
-  dat[1] = (acc_obj_rel_spd_2);
-  dat[2] = (acc_obj_rel_spd_1) | (acc_obj_dist_2);
-  dat[3] = (acc_obj_dist_1) | (acc_obj_lat_pos_2);
-  dat[4] = (acc_obj_lat_pos_1);
-  dat[5] = (obj_valid);
-  dat[6] = 0x00;
+  dat[1] = 0x00;
+  dat[2] = (obj_valid);
+  dat[3] = (acc_obj_lat_pos_1);
+  dat[4] = (acc_obj_dist_1) | (acc_obj_lat_pos_2);
+  dat[5] = (acc_obj_rel_spd_1) | (acc_obj_dist_2);
+  dat[6] = (acc_obj_rel_spd_2);
   dat[7] = 0x00;
   CAN1->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
   CAN1->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
