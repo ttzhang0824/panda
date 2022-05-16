@@ -4,7 +4,7 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 }
 
 int block = 0;
-//int override = 0;
+int override = 0;
 void send_id(uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1, uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2);
 
 // *** no output safety mode ***
@@ -38,14 +38,15 @@ uint8_t acc_obj_rel_spd_2 = 0;
 static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   int bus_fwd = -1;
   int addr = GET_ADDR(to_fwd);
-  //int aeb_fcw = 0;
 
   int is_scc_msg = ((addr == 1056) || (addr == 1057) || (addr == 1290) || (addr == 905));  // SCC11 || SCC12 || SCC13 || SCC14
   int is_fca_msg = ((addr == 909) || (addr == 1155));  // FCA11 || FCA12
   int is_frt_radar_msg = (addr == 1186);  // FRT_RADAR11
 
   if (bus_num == 0) {
-    if (is_scc_msg || is_fca_msg || is_frt_radar_msg) {
+    if (override) {
+      block = 0;
+    } else if (is_scc_msg || is_fca_msg || is_frt_radar_msg) {
       block = 1;
     }
     bus_fwd = 2;
@@ -62,31 +63,32 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       acc_obj_rel_spd_2 = GET_BYTE(to_fwd, 6);
       send_id(obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
     }
-    // FCA11: Detect FCW, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
-    if (addr == 909) {
-      int CR_VSM_DecCmd = GET_BYTE(to_fwd, 1);
-      int FCA_CmdAct = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
-      int CF_VSM_DecCmdAct = (GET_BYTE(to_fwd, 3) >> 7) & 1U;
-      if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
-        //aeb_fcw = 1;
-        block = 0;
+    if ((addr == 909) || (addr == 1057)) {
+      int aeb_fcw = 0;
+      // FCA11: Detect FCW, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
+      if (addr == 909) {
+        int CR_VSM_DecCmd = GET_BYTE(to_fwd, 1);
+        int FCA_CmdAct = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
+        int CF_VSM_DecCmdAct = (GET_BYTE(to_fwd, 3) >> 7) & 1U;
+        if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
+          aeb_fcw = 1;
+        }
+      }
+      // SCC12: Detect AEB, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
+      if (addr == 1057) {
+        int aeb_decel_cmd = GET_BYTE(to_fwd, 2);
+        int aeb_req = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
+        if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
+          aeb_fcw = 1;
+        }
+      }
+      if (aeb_fcw != 0) {
+        override = 1;
+      } else {
+        override = 0;
       }
     }
-    // SCC12: Detect AEB, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
-    if (addr == 1057) {
-      int aeb_decel_cmd = GET_BYTE(to_fwd, 2);
-      int aeb_req = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
-      if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
-        //aeb_fcw = 1;
-        block = 0;
-      }
-    }
-    /**if (aeb_fcw != 0) {
-      override = 1;
-    } else {
-      override = 0;
-    }**/
-    int block_msg = (block && (is_scc_msg || is_fca_msg || is_frt_radar_msg));
+    int block_msg = (block && !override && (is_scc_msg || is_fca_msg || is_frt_radar_msg));
     if (!block_msg) {
       bus_fwd = 0;
     }
