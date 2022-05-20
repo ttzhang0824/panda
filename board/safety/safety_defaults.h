@@ -20,27 +20,6 @@ void escc_fca11(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
 void escc_fca12(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
                 uint8_t bit4, uint8_t bit5, uint8_t bit6, uint8_t bit7);
 void escc_frt_radar11(uint8_t bit0, uint8_t bit1);
-/**void escc_scc11(uint8_t mainmode_acc, uint8_t sccinfodisplay, uint8_t alivecounteracc, uint8_t vsetdis, uint8_t objvalid,
-                uint8_t driveralertdisplay, uint8_t taugapset, uint8_t navi_scc_curve_status, uint8_t navi_scc_curve_act,
-                uint8_t navi_scc_camera_act, uint8_t navi_scc_camera_status, uint8_t acc_objstatus,
-                uint8_t acc_objlatpos_1, uint8_t acc_objlatpos_2, uint8_t acc_objrelspd_1, uint8_t acc_objrelspd_2,
-                uint8_t acc_objdist_1, uint8_t acc_objdist_2);
-void escc_scc12(uint8_t cf_vsm_prefill, uint8_t cf_vsm_deccmdact, uint8_t cf_vsm_hbacmd, uint8_t cf_vsm_warn,
-                uint8_t cf_vsm_stat, uint8_t cf_vsm_beltcmd, uint8_t accfailinfo, uint8_t accmode, uint8_t stopreq,
-                uint8_t cr_vsm_deccmd, uint8_t takeoverreq, uint8_t prefill, uint8_t cf_vsm_confmode, uint8_t aeb_failinfo,
-                uint8_t aeb_status, uint8_t aeb_cmdact, uint8_t aeb_stopreq, uint8_t cr_vsm_alive, uint8_t cr_vsm_chksum,
-                uint8_t areqvalue_1, uint8_t areqvalue_2, uint8_t areqraw_1, uint8_t areqraw_2);
-void escc_scc13(uint8_t sccdrvmodervalue, uint8_t scc_equip, uint8_t aebdrvsetstatus, uint8_t lead_veh_dep_alert_usm);
-void escc_scc14(uint8_t comfortbandupper, uint8_t comfortbandlower_1, uint8_t comfortbandlower_2,
-                uint8_t jerkupperlimit_1, uint8_t jerkupperlimit_2, uint8_t jerklowerlimit_1, uint8_t jerklowerlimit_2,
-                uint8_t accmode, uint8_t objgap);
-void escc_fca11(uint8_t cf_vsm_prefill, uint8_t cf_vsm_hbacmd, uint8_t cf_vsm_warn, uint8_t cf_vsm_beltcmd,
-                uint8_t cr_vsm_deccmd, uint8_t fca_status, uint8_t fca_cmdact, uint8_t fca_stopreq,
-                uint8_t fca_drvsetstatus_1, uint8_t fca_drvsetstatus_2, uint8_t cf_vsm_deccmdact, uint8_t fca_failinfo,
-                uint8_t fca_relativevelocity_1, uint8_t fca_relativevelocity_2, uint8_t fca_timetocollision,
-                uint8_t cr_fca_alive, uint8_t cr_fca_chksum, uint8_t supplemental_counter, uint8_t paint1_status)
-void escc_fca12(uint8_t fca_usm, uint8_t fca_drvsetstate);
-void escc_frt_radar11(uint8_t cf_fca_equip_front_radar);**/
 
 // *** no output safety mode ***
 
@@ -109,31 +88,8 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       uint8_t bit5 = GET_BYTE(to_fwd, 5);
       uint8_t bit6 = GET_BYTE(to_fwd, 6);
       uint8_t bit7 = GET_BYTE(to_fwd, 7);
-      void escc_scc11(bit0, bit1, bit2, bit3,
-                      bit4, bit5, bit6, bit7);
-      /**uint8_t mainmode_acc = (GET_BYTE(to_fwd, 0) & 0x1);
-      uint8_t sccinfodisplay = (GET_BYTE(to_fwd, 0) & 0xE);
-      uint8_t alivecounteracc = (GET_BYTE(to_fwd, 0) & 0xF0);
-      uint8_t vsetdis = GET_BYTE(to_fwd, 1);
-      uint8_t objvalid = (GET_BYTE(to_fwd, 2) & 0x1);
-      uint8_t driveralertdisplay = (GET_BYTE(to_fwd, 2) & 0x6);
-      uint8_t taugapset = (GET_BYTE(to_fwd, 2) & 0x38);
-      uint8_t navi_scc_curve_status = (GET_BYTE(to_fwd, 7) & 0x3);
-      uint8_t navi_scc_curve_act = (GET_BYTE(to_fwd, 7) & 0xC);
-      uint8_t navi_scc_camera_act = (GET_BYTE(to_fwd, 7) & 0x30);
-      uint8_t navi_scc_camera_status = (GET_BYTE(to_fwd, 7) & 0xC0);
-      uint8_t acc_objstatus = (GET_BYTE(to_fwd, 2) & 0xC0);
-      uint8_t acc_objlatpos_1 = GET_BYTE(to_fwd, 3);
-      uint8_t acc_objlatpos_2 = (GET_BYTE(to_fwd, 4) & 0x1);
-      uint8_t acc_objrelspd_1 = (GET_BYTE(to_fwd, 5) & 0xF0);
-      uint8_t acc_objrelspd_2 = GET_BYTE(to_fwd, 6);
-      uint8_t acc_objdist_1 = (GET_BYTE(to_fwd, 4) & 0xFE);
-      uint8_t acc_objdist_2 = (GET_BYTE(to_fwd, 5) & 0xF);
-      escc_scc11(mainmode_acc, sccinfodisplay, alivecounteracc, vsetdis,
-                 objvalid, driveralertdisplay, taugapset, navi_scc_curve_status,
-                 navi_scc_curve_act, navi_scc_camera_act, navi_scc_camera_status,
-                 acc_objstatus, acc_objlatpos_1, acc_objlatpos_2, acc_objrelspd_1,
-                 acc_objrelspd_2, acc_objdist_1, acc_objdist_2);**/
+      escc_scc11(bit0, bit1, bit2, bit3,
+                 bit4, bit5, bit6, bit7);
     }
     // SCC12: Detect AEB, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
     if (addr == 1057) {
@@ -150,36 +106,8 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       uint8_t bit5 = GET_BYTE(to_fwd, 5);
       uint8_t bit6 = GET_BYTE(to_fwd, 6);
       uint8_t bit7 = GET_BYTE(to_fwd, 7);
-      void escc_scc12(bit0, bit1, bit2, bit3,
-                      bit4, bit5, bit6, bit7);
-      /**uint8_t cf_vsm_prefill = (GET_BYTE(to_fwd, 0) & 0x1);
-      uint8_t cf_vsm_deccmdact = (GET_BYTE(to_fwd, 0) & 0x2);
-      uint8_t cf_vsm_hbacmd = (GET_BYTE(to_fwd, 0) & 0xC);
-      uint8_t cf_vsm_warn = (GET_BYTE(to_fwd, 0) & 0x30);
-      uint8_t cf_vsm_stat = (GET_BYTE(to_fwd, 0) & 0xC0);
-      uint8_t cf_vsm_beltcmd = (GET_BYTE(to_fwd, 1) & 0x7);
-      uint8_t accfailinfo = (GET_BYTE(to_fwd, 1) & 0x18);
-      uint8_t accmode = (GET_BYTE(to_fwd, 1) & 0x60);
-      uint8_t stopreq = (GET_BYTE(to_fwd, 1) & 0x80);
-      uint8_t cr_vsm_deccmd = GET_BYTE(to_fwd, 2);
-      uint8_t takeoverreq = (GET_BYTE(to_fwd, 4) & 0x8);
-      uint8_t prefill = (GET_BYTE(to_fwd, 4) & 0x10);
-      uint8_t cf_vsm_confmode = (GET_BYTE(to_fwd, 6) & 0x3);
-      uint8_t aeb_failinfo = (GET_BYTE(to_fwd, 6) & 0xC);
-      uint8_t aeb_status = (GET_BYTE(to_fwd, 6) & 0x30);
-      uint8_t aeb_cmdact = (GET_BYTE(to_fwd, 6) & 0x60);
-      uint8_t aeb_stopreq = (GET_BYTE(to_fwd, 6) & 0x80);
-      uint8_t cr_vsm_alive = (GET_BYTE(to_fwd, 7) & 0xF);
-      uint8_t cr_vsm_chksum = (GET_BYTE(to_fwd, 7) & 0xF0);
-      uint8_t areqvalue_1 = (GET_BYTE(to_fwd, 4) & 0xE0);
-      uint8_t areqvalue_2 = GET_BYTE(to_fwd, 5);
-      uint8_t areqraw_1 = GET_BYTE(to_fwd, 3);
-      uint8_t areqraw_2 = (GET_BYTE(to_fwd, 4) & 0x7);
-      escc_scc12(cf_vsm_prefill, cf_vsm_deccmdact, cf_vsm_hbacmd, cf_vsm_warn,
-                 cf_vsm_stat, cf_vsm_beltcmd, accfailinfo, accmode, stopreq,
-                 cr_vsm_deccmd, takeoverreq, prefill, cf_vsm_confmode, aeb_failinfo,
-                 aeb_status, aeb_cmdact, aeb_stopreq, cr_vsm_alive, cr_vsm_chksum,
-                 areqvalue_1, areqvalue_2, areqraw_1, areqraw_2);**/
+      escc_scc12(bit0, bit1, bit2, bit3,
+                 bit4, bit5, bit6, bit7);
 
       if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
         block = 0;
@@ -194,8 +122,8 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       uint8_t bit5 = GET_BYTE(to_fwd, 5);
       uint8_t bit6 = GET_BYTE(to_fwd, 6);
       uint8_t bit7 = GET_BYTE(to_fwd, 7);
-      void escc_scc13(bit0, bit1, bit2, bit3,
-                      bit4, bit5, bit6, bit7);
+      escc_scc13(bit0, bit1, bit2, bit3,
+                 bit4, bit5, bit6, bit7);
     }
     if (addr == 905) {
       uint8_t bit0 = GET_BYTE(to_fwd, 0);
@@ -206,8 +134,8 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       uint8_t bit5 = GET_BYTE(to_fwd, 5);
       uint8_t bit6 = GET_BYTE(to_fwd, 6);
       uint8_t bit7 = GET_BYTE(to_fwd, 7);
-      void escc_scc14(bit0, bit1, bit2, bit3,
-                      bit4, bit5, bit6, bit7);
+      escc_scc14(bit0, bit1, bit2, bit3,
+                 bit4, bit5, bit6, bit7);
     }
     // FCA11: Detect FCW, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
     if (addr == 909) {
@@ -225,8 +153,8 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       uint8_t bit5 = GET_BYTE(to_fwd, 5);
       uint8_t bit6 = GET_BYTE(to_fwd, 6);
       uint8_t bit7 = GET_BYTE(to_fwd, 7);
-      void escc_fca11(bit0, bit1, bit2, bit3,
-                      bit4, bit5, bit6, bit7);
+      escc_fca11(bit0, bit1, bit2, bit3,
+                 bit4, bit5, bit6, bit7);
 
       if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
         block = 0;
@@ -241,13 +169,13 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       uint8_t bit5 = GET_BYTE(to_fwd, 5);
       uint8_t bit6 = GET_BYTE(to_fwd, 6);
       uint8_t bit7 = GET_BYTE(to_fwd, 7);
-      void escc_fca12(bit0, bit1, bit2, bit3,
-                      bit4, bit5, bit6, bit7);
+      escc_fca12(bit0, bit1, bit2, bit3,
+                 bit4, bit5, bit6, bit7);
     }
     if (addr == 1186) {
       uint8_t bit0 = GET_BYTE(to_fwd, 0);
       uint8_t bit1 = GET_BYTE(to_fwd, 1);
-      void escc_frt_radar11(bit0, bit1);
+      escc_frt_radar11(bit0, bit1);
     }
     send_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12 , obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
     int block_msg = (block && (is_scc_msg || is_fca_msg || is_frt_radar_msg));
