@@ -140,6 +140,7 @@ void escc_scc11(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
   CAN2->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
   CAN2->sTxMailBox[0].TDTR = 8;
   CAN2->sTxMailBox[0].TIR = (0x420U << 21) | 1U;
+  CAN1->sTxMailBox[0].TIR = (0x2ABU << 21) | 1U;
 }
 
 void escc_scc12(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
@@ -158,6 +159,7 @@ void escc_scc12(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
   CAN2->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
   CAN2->sTxMailBox[0].TDTR = 8;
   CAN2->sTxMailBox[0].TIR = (0x421U << 21) | 1U;
+  CAN1->sTxMailBox[0].TIR = (0x2ACU << 21) | 1U;
 }
 
 void escc_scc13(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
@@ -176,6 +178,7 @@ void escc_scc13(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
   CAN2->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
   CAN2->sTxMailBox[0].TDTR = 8;
   CAN2->sTxMailBox[0].TIR = (0x50AU << 21) | 1U;
+  CAN1->sTxMailBox[0].TIR = (0x2ADU << 21) | 1U;
 }
 
 void escc_scc14(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
@@ -194,6 +197,7 @@ void escc_scc14(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
   CAN2->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
   CAN2->sTxMailBox[0].TDTR = 8;
   CAN2->sTxMailBox[0].TIR = (0x389U << 21) | 1U;
+  CAN1->sTxMailBox[0].TIR = (0x2AEU << 21) | 1U;
 }
 
 void escc_fca11(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
@@ -212,6 +216,7 @@ void escc_fca11(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
   CAN2->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
   CAN2->sTxMailBox[0].TDTR = 8;
   CAN2->sTxMailBox[0].TIR = (0x38DU << 21) | 1U;
+  CAN1->sTxMailBox[0].TIR = (0x2AFU << 21) | 1U;
 }
 
 void escc_fca12(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
@@ -230,6 +235,7 @@ void escc_fca12(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
   CAN2->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
   CAN2->sTxMailBox[0].TDTR = 8;
   CAN2->sTxMailBox[0].TIR = (0x483U << 21) | 1U;
+  CAN1->sTxMailBox[0].TIR = (0x2B0U << 21) | 1U;
 }
 
 void escc_frt_radar11(uint8_t bit0, uint8_t bit1) {
@@ -240,6 +246,7 @@ void escc_frt_radar11(uint8_t bit0, uint8_t bit1) {
   CAN2->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8);
   CAN2->sTxMailBox[0].TDTR = 2;
   CAN2->sTxMailBox[0].TIR = (0x4A2U << 21) | 1U;
+  CAN1->sTxMailBox[0].TIR = (0x2B1U << 21) | 1U;
 }
 
 // ****************************** safety mode ******************************
