@@ -106,6 +106,11 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       uint8_t acc_objrelspd_2 = GET_BYTE(to_fwd, 6);
       uint8_t acc_objdist_1 = (GET_BYTE(to_fwd, 4) & 0xFE);
       uint8_t acc_objdist_2 = (GET_BYTE(to_fwd, 5) & 0xF);
+      escc_scc11(mainmode_acc, sccinfodisplay, alivecounteracc, vsetdis,
+                 objvalid, driveralertdisplay, taugapset, navi_scc_curve_status,
+                 navi_scc_curve_act, navi_scc_camera_act, navi_scc_camera_status,
+                 acc_objstatus, acc_objlatpos_1, acc_objlatpos_2, acc_objrelspd_1,
+                 acc_objrelspd_2, acc_objdist_1, acc_objdist_2);
     }
     // SCC12: Detect AEB, override and forward is_scc_msg && is_frt_radar_msg && is_fca_msg
     if (addr == 1057) {
@@ -114,11 +119,34 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       aeb_cmd_act = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
       cf_vsm_warn_scc12 = ((GET_BYTE(to_fwd, 0) >> 4) & 0x2);
 
-      uint8_t cf_vsm_prefill, uint8_t cf_vsm_deccmdact, uint8_t cf_vsm_hbacmd, uint8_t cf_vsm_warn,
-      uint8_t cf_vsm_stat, uint8_t cf_vsm_beltcmd, uint8_t accfailinfo, uint8_t accmode, uint8_t stopreq,
-      uint8_t cr_vsm_deccmd, uint8_t takeoverreq, uint8_t prefill, uint8_t cf_vsm_confmode, uint8_t aeb_failinfo,
-      uint8_t aeb_status, uint8_t aeb_cmdact, uint8_t aeb_stopreq, uint8_t cr_vsm_alive, uint8_t cr_vsm_chksum,
-      uint8_t areqvalue_1, uint8_t areqvalue_2, uint8_t areqraw_1, uint8_t areqraw_2
+      uint8_t cf_vsm_prefill = (GET_BYTE(to_fwd, 0) & 0x1);
+      uint8_t cf_vsm_deccmdact = (GET_BYTE(to_fwd, 0) & 0x2);
+      uint8_t cf_vsm_hbacmd = (GET_BYTE(to_fwd, 0) & 0xC);
+      uint8_t cf_vsm_warn = (GET_BYTE(to_fwd, 0) & 0x30);
+      uint8_t cf_vsm_stat = (GET_BYTE(to_fwd, 0) & 0xC0);
+      uint8_t cf_vsm_beltcmd = (GET_BYTE(to_fwd, 1) & 0x7);
+      uint8_t accfailinfo = (GET_BYTE(to_fwd, 1) & 0x18);
+      uint8_t accmode = (GET_BYTE(to_fwd, 1) & 0x60);
+      uint8_t stopreq = (GET_BYTE(to_fwd, 1) & 0x80);
+      uint8_t cr_vsm_deccmd = GET_BYTE(to_fwd, 2);
+      uint8_t takeoverreq = (GET_BYTE(to_fwd, 4) & 0x8);
+      uint8_t prefill = (GET_BYTE(to_fwd, 4) & 0x10);
+      uint8_t cf_vsm_confmode = (GET_BYTE(to_fwd, 6) & 0x3);
+      uint8_t aeb_failinfo = (GET_BYTE(to_fwd, 6) & 0xC);
+      uint8_t aeb_status = (GET_BYTE(to_fwd, 6) & 0x30);
+      uint8_t aeb_cmdact = (GET_BYTE(to_fwd, 6) & 0x60);
+      uint8_t aeb_stopreq = (GET_BYTE(to_fwd, 6) & 0x80);
+      uint8_t cr_vsm_alive = (GET_BYTE(to_fwd, 7) & 0xF);
+      uint8_t cr_vsm_chksum = (GET_BYTE(to_fwd, 7) & 0xF0);
+      uint8_t areqvalue_1 = (GET_BYTE(to_fwd, 4) & 0xE0);
+      uint8_t areqvalue_2 = GET_BYTE(to_fwd, 5);
+      uint8_t areqraw_1 = GET_BYTE(to_fwd, 3);
+      uint8_t areqraw_2 = (GET_BYTE(to_fwd, 4) & 0x7);
+      escc_scc12(cf_vsm_prefill, cf_vsm_deccmdact, cf_vsm_hbacmd, cf_vsm_warn,
+                 cf_vsm_stat, cf_vsm_beltcmd, accfailinfo, accmode, stopreq,
+                 cr_vsm_deccmd, takeoverreq, prefill, cf_vsm_confmode, aeb_failinfo,
+                 aeb_status, aeb_cmdact, aeb_stopreq, cr_vsm_alive, cr_vsm_chksum,
+                 areqvalue_1, areqvalue_2, areqraw_1, areqraw_2);
 
       if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
         block = 0;
