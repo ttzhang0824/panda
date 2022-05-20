@@ -124,7 +124,125 @@ void send_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11
   CAN1->sTxMailBox[0].TIR = (0x2AAU << 21) | 1U;
 }
 
-void escc_scc11(uint8_t mainmode_acc, uint8_t sccinfodisplay, uint8_t alivecounteracc, uint8_t vsetdis,
+void escc_scc11(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
+                uint8_t bit4, uint8_t bit5, uint8_t bit6, uint8_t bit7) {
+
+  uint8_t dat[8];
+  dat[0] = bit0;
+  dat[1] = bit1;
+  dat[2] = bit2;
+  dat[3] = bit3;
+  dat[4] = bit4;
+  dat[5] = bit5;
+  dat[6] = bit6;
+  dat[7] = bit7;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x420U << 21) | 1U;
+}
+
+void escc_scc12(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
+                uint8_t bit4, uint8_t bit5, uint8_t bit6, uint8_t bit7) {
+
+  uint8_t dat[8];
+  dat[0] = bit0;
+  dat[1] = bit1;
+  dat[2] = bit2;
+  dat[3] = bit3;
+  dat[4] = bit4;
+  dat[5] = bit5;
+  dat[6] = bit6;
+  dat[7] = bit7;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x421U << 21) | 1U;
+}
+
+void escc_scc13(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
+                uint8_t bit4, uint8_t bit5, uint8_t bit6, uint8_t bit7) {
+
+  uint8_t dat[8];
+  dat[0] = bit0;
+  dat[1] = bit1;
+  dat[2] = bit2;
+  dat[3] = bit3;
+  dat[4] = bit4;
+  dat[5] = bit5;
+  dat[6] = bit6;
+  dat[7] = bit7;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x50AU << 21) | 1U;
+}
+
+void escc_scc14(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
+                uint8_t bit4, uint8_t bit5, uint8_t bit6, uint8_t bit7) {
+
+  uint8_t dat[8];
+  dat[0] = bit0;
+  dat[1] = bit1;
+  dat[2] = bit2;
+  dat[3] = bit3;
+  dat[4] = bit4;
+  dat[5] = bit5;
+  dat[6] = bit6;
+  dat[7] = bit7;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x389U << 21) | 1U;
+}
+
+void escc_fca11(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
+                uint8_t bit4, uint8_t bit5, uint8_t bit6, uint8_t bit7) {
+
+  uint8_t dat[8];
+  dat[0] = bit0;
+  dat[1] = bit1;
+  dat[2] = bit2;
+  dat[3] = bit3;
+  dat[4] = bit4;
+  dat[5] = bit5;
+  dat[6] = bit6;
+  dat[7] = bit7;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x38DU << 21) | 1U;
+}
+
+void escc_fca12(uint8_t bit0, uint8_t bit1, uint8_t bit2, uint8_t bit3,
+                uint8_t bit4, uint8_t bit5, uint8_t bit6, uint8_t bit7) {
+
+  uint8_t dat[8];
+  dat[0] = bit0;
+  dat[1] = bit1;
+  dat[2] = bit2;
+  dat[3] = bit3;
+  dat[4] = bit4;
+  dat[5] = bit5;
+  dat[6] = bit6;
+  dat[7] = bit7;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x483U << 21) | 1U;
+}
+
+void escc_frt_radar11(uint8_t bit0, uint8_t bit1) {
+
+  uint8_t dat[2];
+  dat[0] = bit0;
+  dat[1] = bit1;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8);
+  CAN3->sTxMailBox[0].TDTR = 2;
+  CAN3->sTxMailBox[0].TIR = (0x4A2U << 21) | 1U;
+}
+
+/**void escc_scc11(uint8_t mainmode_acc, uint8_t sccinfodisplay, uint8_t alivecounteracc, uint8_t vsetdis,
                 uint8_t objvalid, uint8_t driveralertdisplay, uint8_t taugapset, uint8_t navi_scc_curve_status,
                 uint8_t navi_scc_curve_act, uint8_t navi_scc_camera_act, uint8_t navi_scc_camera_status,
                 uint8_t acc_objstatus, uint8_t acc_objlatpos_1, uint8_t acc_objlatpos_2, uint8_t acc_objrelspd_1,
@@ -243,7 +361,7 @@ void escc_frt_radar11(uint8_t cf_fca_equip_front_radar) {
   CAN3->sTxMailBox[0].TDLR = (cf_fca_equip_front_radar) | (0x00 << 8);
   CAN3->sTxMailBox[0].TDTR = 2;
   CAN3->sTxMailBox[0].TIR = (0x4A2U << 21) | 1U;
-}
+}**/
 
 // ****************************** safety mode ******************************
 
