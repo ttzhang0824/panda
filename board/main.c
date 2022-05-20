@@ -105,7 +105,10 @@ void debug_ring_callback(uart_ring *ring) {
 }
 
 // Send radar points msg
-void send_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12, uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1, uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2) {
+void send_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12,
+             uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1,
+             uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2) {
+
   uint8_t dat[8];
   dat[0] = (fca_cmd_act) | (cf_vsm_warn_fca11 << 1) | (aeb_cmd_act << 3) | (cf_vsm_warn_scc12 << 4);
   dat[1] = 0x00;
@@ -119,6 +122,127 @@ void send_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11
   CAN1->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
   CAN1->sTxMailBox[0].TDTR = 8;
   CAN1->sTxMailBox[0].TIR = (0x2AAU << 21) | 1U;
+}
+
+void escc_scc11(uint8_t mainmode_acc, uint8_t sccinfodisplay, uint8_t alivecounteracc, uint8_t vsetdis,
+                uint8_t objvalid, uint8_t driveralertdisplay, uint8_t taugapset, uint8_t navi_scc_curve_status,
+                uint8_t navi_scc_curve_act, uint8_t navi_scc_camera_act, uint8_t navi_scc_camera_status,
+                uint8_t acc_objstatus, uint8_t acc_objlatpos_1, uint8_t acc_objlatpos_2, uint8_t acc_objrelspd_1,
+                uint8_t acc_objrelspd_2, uint8_t acc_objdist_1, uint8_t acc_objdist_2) {
+
+  uint8_t dat[8];
+  dat[0] = (mainmode_acc) | (sccinfodisplay << 1) | (alivecounteracc << 4);
+  dat[1] = (vsetdis);
+  dat[2] = (objvalid) | (driveralertdisplay << 1) | (taugapset << 3) | (acc_objstatus << 6);
+  dat[3] = (acc_objlatpos_1);
+  dat[4] = (acc_objdist_1) | (acc_objlatpos_2);
+  dat[5] = (acc_objdist_2) | (acc_objrelspd_1);
+  dat[6] = (acc_objrelspd_2);
+  dat[7] = (navi_scc_curve_status) | (navi_scc_curve_act << 2) | (navi_scc_camera_act << 4) | (navi_scc_camera_act << 6);
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x420U << 21) | 1U;
+}
+
+void escc_scc12(uint8_t cf_vsm_prefill, uint8_t cf_vsm_deccmdact, uint8_t cf_vsm_hbacmd, uint8_t cf_vsm_warn,
+                uint8_t cf_vsm_stat, uint8_t cf_vsm_beltcmd, uint8_t accfailinfo, uint8_t accmode, uint8_t stopreq,
+                uint8_t cr_vsm_deccmd, uint8_t takeoverreq, uint8_t prefill, uint8_t cf_vsm_confmode,
+                uint8_t aeb_failinfo, uint8_t aeb_status, uint8_t aeb_cmdact, uint8_t aeb_stopreq,
+                uint8_t cr_vsm_alive, uint8_t cr_vsm_chksum, uint8_t areqvalue_1, uint8_t areqvalue_2,
+                uint8_t areqraw_1, uint8_t areqraw_2) {
+
+  uint8_t dat[8];
+  dat[0] = (cf_vsm_prefill) | (cf_vsm_deccmdact << 1) | (cf_vsm_hbacmd << 2) | (cf_vsm_warn << 4) | (cf_vsm_stat << 6);
+  dat[1] = (cf_vsm_beltcmd) | (accfailinfo << 3) | (accmode << 5) | (stopreq << 7);
+  dat[2] = (cr_vsm_deccmd);
+  dat[3] = (areqraw_1);
+  dat[4] = (areqraw_2) | (takeoverreq << 3) | (prefill << 4) | (areqvalue_1 << 5);
+  dat[5] = (areqvalue_2);
+  dat[6] = (cf_vsm_confmode) | (aeb_failinfo << 2) | (aeb_status << 4) | (aeb_cmdact << 6) | (aeb_stopreq << 7);
+  dat[7] = (cr_vsm_alive) | (cr_vsm_chksum << 4);
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x421U << 21) | 1U;
+}
+
+void escc_scc13(uint8_t sccdrvmodervalue, uint8_t scc_equip, uint8_t aebdrvsetstatus, uint8_t lead_veh_dep_alert_usm) {
+  uint8_t dat[8];
+  dat[0] = (sccdrvmodervalue) | (scc_equip << 3) | (aebdrvsetstatus << 4);
+  dat[1] = (lead_veh_dep_alert_usm << 4);
+  dat[2] = 0x00;
+  dat[3] = 0x00;
+  dat[4] = 0x00;
+  dat[5] = 0x00;
+  dat[6] = 0x00;
+  dat[7] = 0x00;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x50AU << 21) | 1U;
+}
+
+void escc_scc14(uint8_t comfortbandupper, uint8_t comfortbandlower_1, uint8_t comfortbandlower_2,
+                uint8_t jerkupperlimit_1, uint8_t jerkupperlimit_2, uint8_t jerklowerlimit_1, uint8_t jerklowerlimit_2,
+                uint8_t accmode, uint8_t objgap) {
+
+  uint8_t dat[8];
+  dat[0] = (comfortbandupper) | (comfortbandlower_1 << 6);
+  dat[1] = (comfortbandlower_2) | (jerkupperlimit_1 << 4);
+  dat[2] = (jerkupperlimit_2) | (jerklowerlimit_1 << 3);
+  dat[3] = (jerklowerlimit_2);
+  dat[4] = (accmode);
+  dat[5] = 0x00;
+  dat[6] = 0x00;
+  dat[7] = (objgap);
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x389U << 21) | 1U;
+}
+
+void escc_fca11(uint8_t cf_vsm_prefill, uint8_t cf_vsm_hbacmd, uint8_t cf_vsm_warn, uint8_t cf_vsm_beltcmd,
+                uint8_t cr_vsm_deccmd, uint8_t fca_status, uint8_t fca_cmdact, uint8_t fca_stopreq,
+                uint8_t fca_drvsetstatus_1, uint8_t fca_drvsetstatus_2, uint8_t cf_vsm_deccmdact, uint8_t fca_failinfo,
+                uint8_t fca_relativevelocity_1, uint8_t fca_relativevelocity_2, uint8_t fca_timetocollision,
+                uint8_t cr_fca_alive, uint8_t cr_fca_chksum, uint8_t supplemental_counter, uint8_t paint1_status) {
+
+  uint8_t dat[8];
+  dat[0] = (cf_vsm_prefill) | (cf_vsm_hbacmd << 1) | (cf_vsm_warn << 3) | (cf_vsm_beltcmd << 5);
+  dat[1] = (cr_vsm_deccmd);
+  dat[2] = (paint1_status) | (fca_status << 2) | (fca_cmdact << 4) | (fca_stopreq << 5) | (fca_drvsetstatus_1 << 6);
+  dat[3] = (fca_drvsetstatus_2) | (cf_vsm_deccmdact << 7);
+  dat[4] = (fca_failinfo) | (supplemental_counter << 3) | (fca_relativevelocity_1 << 7);
+  dat[5] = (fca_relativevelocity_2);
+  dat[6] = (fca_timetocollision);
+  dat[7] = (cr_fca_alive) | (cr_fca_chksum << 4);
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x38DU << 21) | 1U;
+}
+
+void escc_fca12(uint8_t fca_usm, uint8_t fca_drvsetstate) {
+  uint8_t dat[8];
+  dat[0] = (fca_usm) | (fca_drvsetstate << 3);
+  dat[1] = 0x00;
+  dat[2] = 0x00;
+  dat[3] = 0x00;
+  dat[4] = 0x00;
+  dat[5] = 0x00;
+  dat[6] = 0x00;
+  dat[7] = 0x00;
+  CAN3->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN3->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN3->sTxMailBox[0].TDTR = 8;
+  CAN3->sTxMailBox[0].TIR = (0x483U << 21) | 1U;
+}
+
+void escc_frt_radar11(uint8_t cf_fca_equip_front_radar) {
+  CAN3->sTxMailBox[0].TDLR = (cf_fca_equip_front_radar) | (0x00 << 8);
+  CAN3->sTxMailBox[0].TDTR = 2;
+  CAN3->sTxMailBox[0].TIR = (0x4A2U << 21) | 1U;
 }
 
 // ****************************** safety mode ******************************
