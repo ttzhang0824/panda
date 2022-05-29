@@ -170,13 +170,6 @@ void escc_fca11(uint32_t fca11_first_4_bytes, uint32_t fca11_second_4_bytes) {
   CAN2->sTxMailBox[0].TDTR = 8;
   CAN2->sTxMailBox[0].TIR = (0x483U << 21) | 1U;
   CAN1->sTxMailBox[0].TIR = (0x2CFU << 21) | 1U;
-}
-
-void escc_frt_radar11(uint16_t frt_radar11_first_2_bytes) {
-  CAN2->sTxMailBox[0].TDLR = frt_radar11_first_2_bytes;
-  CAN2->sTxMailBox[0].TDTR = 2;
-  CAN2->sTxMailBox[0].TIR = (0x4A2U << 21) | 1U;
-  CAN1->sTxMailBox[0].TIR = (0x2D0U << 21) | 1U;
 }**/
 
 // ****************************** safety mode ******************************
