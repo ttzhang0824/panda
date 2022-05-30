@@ -68,10 +68,11 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   int addr = GET_ADDR(to_fwd);
 
   int is_scc_msg = ((addr == 1056) || (addr == 1057) || (addr == 1290) || (addr == 905));  // SCC11 || SCC12 || SCC13 || SCC14
+  int is_fca_msg = ((addr == 909) || (addr == 1155));  // FCA11 || FCA12
 
   if (bus_num == 0) {
     // ESCC is receiving messages from sunnypilot or openpilot
-    if (is_scc_msg) {
+    if (is_scc_msg || is_fca_msg) {
       block = 1;
     }
     bus_fwd = 2;
@@ -92,7 +93,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       scc11_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
       escc_scc11(scc11_first_4_bytes, scc11_second_4_bytes);
     }
-    // SCC12: Detect AEB, override and forward is_scc_msg
+    // SCC12: Detect AEB, override and forward is_scc_msg && is_fca_msg
     if (addr == 1057) {
       int aeb_decel_cmd = GET_BYTE(to_fwd, 2);
       int aeb_req = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
@@ -117,7 +118,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       scc14_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
       escc_scc14(scc14_first_4_bytes, scc14_second_4_bytes);
     }**/
-    // FCA11: Detect FCW, override and forward is_scc_msg
+    // FCA11: Detect FCW, override and forward is_scc_msg && is_fca_msg
     if (addr == 909) {
       int CR_VSM_DecCmd = GET_BYTE(to_fwd, 1);
       int FCA_CmdAct = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
@@ -139,7 +140,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       escc_fca12(fca12_first_4_bytes, fca12_second_4_bytes);
     }**/
     send_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12 , obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
-    int block_msg = (block && is_scc_msg));
+    int block_msg = (block && (is_scc_msg || is_fca_msg));
     if (!block_msg) {
       bus_fwd = 0;
     }
