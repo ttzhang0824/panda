@@ -139,7 +139,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       escc_fca12(fca12_first_4_bytes, fca12_second_4_bytes);
     }**/
     send_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12 , obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
-    int block_msg = (block && is_scc_msg));
+    int block_msg = (block && is_scc_msg);
     if (!block_msg) {
       bus_fwd = 0;
     }
