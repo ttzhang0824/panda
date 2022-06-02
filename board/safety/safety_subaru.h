@@ -64,7 +64,7 @@ addr_checks subaru_hybrid_rx_checks = {subaru_hybrid_addr_checks, SUBARU_HYBRID_
 const uint16_t SUBARU_L_PARAM_FLIP_DRIVER_TORQUE = 1;
 bool subaru_l_flip_driver_torque = false;
 
-static uint8_t subaru_get_checksum(CANPacket_t *to_push) {
+static uint32_t subaru_get_checksum(CANPacket_t *to_push) {
   return (uint8_t)GET_BYTE(to_push, 0);
 }
 
@@ -72,7 +72,7 @@ static uint8_t subaru_get_counter(CANPacket_t *to_push) {
   return (uint8_t)(GET_BYTE(to_push, 1) & 0xFU);
 }
 
-static uint8_t subaru_compute_checksum(CANPacket_t *to_push) {
+static uint32_t subaru_compute_checksum(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
   int len = GET_LEN(to_push);
   uint8_t checksum = (uint8_t)(addr) + (uint8_t)((unsigned int)(addr) >> 8U);
@@ -577,22 +577,16 @@ static int subaru_hybrid_rx_hook(CANPacket_t *to_push) {
 
 static const addr_checks* subaru_init(uint16_t param) {
   UNUSED(param);
-  controls_allowed = false;
-  relay_malfunction_reset();
   return &subaru_rx_checks;
 }
 
 static const addr_checks* subaru_gen2_init(uint16_t param) {
   UNUSED(param);
-  controls_allowed = false;
-  relay_malfunction_reset();
   return &subaru_gen2_rx_checks;
 }
 
 static const addr_checks* subaru_hybrid_init(uint16_t param) {
   UNUSED(param);
-  controls_allowed = false;
-  relay_malfunction_reset();
   return &subaru_hybrid_rx_checks;
 }
 
@@ -606,8 +600,6 @@ const safety_hooks subaru_hooks = {
 };
 
 static const addr_checks* subaru_legacy_init(uint16_t param) {
-  controls_allowed = false;
-  relay_malfunction_reset();
   // Checking for flip driver torque from safety parameter
   subaru_l_flip_driver_torque = GET_FLAG(param, SUBARU_L_PARAM_FLIP_DRIVER_TORQUE);
   return &subaru_l_rx_checks;
