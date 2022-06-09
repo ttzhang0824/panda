@@ -1,3 +1,5 @@
+void smdps_clu11(void);
+
 static void send_mdps_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
   bool is_speed_unit_mph = GET_BYTE(to_fwd, 2) & 0x2;
   
@@ -45,6 +47,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     if (addr == 1265) {
       send_mdps_enable_speed(to_fwd);
     }
+    smdps_clu11();
   }
   if (bus_num == 2) {
     bus_fwd = 0;
