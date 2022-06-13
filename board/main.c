@@ -104,23 +104,9 @@ void debug_ring_callback(uart_ring *ring) {
   }
 }
 
-// Send radar points msg
-void send_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12,
-             uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1,
-             uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2) {
-
-  uint8_t dat[8];
-  dat[0] = (fca_cmd_act) | (cf_vsm_warn_fca11 << 1) | (aeb_cmd_act << 3) | (cf_vsm_warn_scc12 << 4);
-  dat[1] = 0x00;
-  dat[2] = (obj_valid);
-  dat[3] = (acc_obj_lat_pos_1);
-  dat[4] = (acc_obj_dist_1) | (acc_obj_lat_pos_2);
-  dat[5] = (acc_obj_rel_spd_1) | (acc_obj_dist_2);
-  dat[6] = (acc_obj_rel_spd_2);
-  dat[7] = 0x00;
-  CAN1->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
-  CAN1->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
-  CAN1->sTxMailBox[0].TDTR = 8;
+void escc_id(void) {
+  CAN1->sTxMailBox[0].TDLR = 0x00;
+  CAN1->sTxMailBox[0].TDTR = 4;
   CAN1->sTxMailBox[0].TIR = (0x2ABU << 21) | 1U;
 }
 
@@ -138,33 +124,12 @@ void escc_scc12(uint32_t scc12_first_4_bytes, uint32_t scc12_second_4_bytes) {
   CAN1->sTxMailBox[0].TIR = (0x2CBU << 21) | 1U;
 }
 
-/**void escc_scc13(uint32_t scc13_first_4_bytes, uint32_t scc13_second_4_bytes) {
-  CAN1->sTxMailBox[0].TDLR = scc13_first_4_bytes;
-  CAN1->sTxMailBox[0].TDHR = scc13_second_4_bytes;
-  CAN1->sTxMailBox[0].TDTR = 8;
-  CAN1->sTxMailBox[0].TIR = (0x2CCU << 21) | 1U;
-}
-
-void escc_scc14(uint32_t scc14_first_4_bytes, uint32_t scc14_second_4_bytes) {
-  CAN1->sTxMailBox[0].TDLR = scc14_first_4_bytes;
-  CAN1->sTxMailBox[0].TDHR = scc14_second_4_bytes;
-  CAN1->sTxMailBox[0].TDTR = 8;
-  CAN1->sTxMailBox[0].TIR = (0x2CDU << 21) | 1U;
-}**/
-
 void escc_fca11(uint32_t fca11_first_4_bytes, uint32_t fca11_second_4_bytes) {
   CAN1->sTxMailBox[0].TDLR = fca11_first_4_bytes;
   CAN1->sTxMailBox[0].TDHR = fca11_second_4_bytes;
   CAN1->sTxMailBox[0].TDTR = 8;
   CAN1->sTxMailBox[0].TIR = (0x2CEU << 21) | 1U;
 }
-
-/**void escc_fca12(uint32_t fca12_first_4_bytes, uint32_t fca12_second_4_bytes) {
-  CAN1->sTxMailBox[0].TDLR = fca12_first_4_bytes;
-  CAN1->sTxMailBox[0].TDHR = fca12_second_4_bytes;
-  CAN1->sTxMailBox[0].TDTR = 8;
-  CAN1->sTxMailBox[0].TIR = (0x2CFU << 21) | 1U;
-}**/
 
 // ****************************** safety mode ******************************
 
