@@ -4,6 +4,8 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 }
 
 int block = 0;
+// Custom ID for SMDPS fingerprinting
+void smdps_id(void);
 // Custom ID for ESCC fingerprinting
 void escc_id(void);
 // Send SCC11
@@ -12,6 +14,19 @@ void escc_scc11(uint32_t scc11_first_4_bytes, uint32_t scc11_second_4_bytes);
 void escc_scc12(uint32_t scc12_first_4_bytes, uint32_t scc12_second_4_bytes);
 // Send FCA11
 void escc_fca11(uint32_t fca11_first_4_bytes, uint32_t fca11_second_4_bytes);
+
+static void send_mdps_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
+  bool is_speed_unit_mph = GET_BYTE(to_fwd, 2) & 0x2;
+
+  int mdps_cutoff_speed = is_speed_unit_mph ? 76 : 120;  // factor of 2 from dbc
+
+  int veh_clu_speed = GET_BYTE(to_fwd, 1) | (GET_BYTE(to_fwd, 2) & 0x1) << 8;
+
+  if (veh_clu_speed < mdps_cutoff_speed) {
+    to_fwd->RDLR &= 0xFFFE00FF;
+    to_fwd->RDLR |= mdps_cutoff_speed << 8;
+  }
+};
 
 // *** no output safety mode ***
 
@@ -53,6 +68,10 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       block = 1;
     }
     bus_fwd = 2;
+    if (addr == 1265) {
+      send_mdps_enable_speed(to_fwd);
+    }
+    smdps_id();
   }
   if (bus_num == 2) {
     // SCC11: Forward radar points to sunnypilot/openpilot

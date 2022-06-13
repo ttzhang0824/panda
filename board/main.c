@@ -104,6 +104,12 @@ void debug_ring_callback(uart_ring *ring) {
   }
 }
 
+void smdps_id(void) {
+  CAN1->sTxMailBox[0].TDLR = 0x00;
+  CAN1->sTxMailBox[0].TDTR = 4;
+  CAN1->sTxMailBox[0].TIR = (0x2AAU << 21) | 1U;
+}
+
 void escc_id(void) {
   CAN1->sTxMailBox[0].TDLR = 0x00;
   CAN1->sTxMailBox[0].TDTR = 4;
