@@ -129,7 +129,7 @@ void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11
   CAN1->sTxMailBox[0].TIR = (0x2ABU << 21) | 1U;
 }
 
-void escc_scc11(uint32_t scc11_first_4_bytes, uint32_t scc11_second_4_bytes) {
+/**void escc_scc11(uint32_t scc11_first_4_bytes, uint32_t scc11_second_4_bytes) {
   CAN1->sTxMailBox[0].TDLR = scc11_first_4_bytes;
   CAN1->sTxMailBox[0].TDHR = scc11_second_4_bytes;
   CAN1->sTxMailBox[0].TDTR = 8;
@@ -148,7 +148,7 @@ void escc_fca11(uint32_t fca11_first_4_bytes, uint32_t fca11_second_4_bytes) {
   CAN1->sTxMailBox[0].TDHR = fca11_second_4_bytes;
   CAN1->sTxMailBox[0].TDTR = 8;
   CAN1->sTxMailBox[0].TIR = (0x2CEU << 21) | 1U;
-}
+}**/
 
 // ****************************** safety mode ******************************
 

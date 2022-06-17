@@ -12,11 +12,11 @@ void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11
              uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1,
              uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2);
 // Send SCC11
-void escc_scc11(uint32_t scc11_first_4_bytes, uint32_t scc11_second_4_bytes);
+//void escc_scc11(uint32_t scc11_first_4_bytes, uint32_t scc11_second_4_bytes);
 // Send SCC12
-void escc_scc12(uint32_t scc12_first_4_bytes, uint32_t scc12_second_4_bytes);
+//void escc_scc12(uint32_t scc12_first_4_bytes, uint32_t scc12_second_4_bytes);
 // Send FCA11
-void escc_fca11(uint32_t fca11_first_4_bytes, uint32_t fca11_second_4_bytes);
+//void escc_fca11(uint32_t fca11_first_4_bytes, uint32_t fca11_second_4_bytes);
 
 static void send_mdps_enable_speed(CAN_FIFOMailBox_TypeDef *to_fwd){
   bool is_speed_unit_mph = GET_BYTE(to_fwd, 2) & 0x2;
@@ -64,12 +64,12 @@ uint8_t acc_obj_dist_2 = 0;
 uint8_t acc_obj_rel_spd_1 = 0;
 uint8_t acc_obj_rel_spd_2 = 0;
 
-uint32_t scc11_first_4_bytes = 0;
+/**uint32_t scc11_first_4_bytes = 0;
 uint32_t scc11_second_4_bytes = 0;
 uint32_t scc12_first_4_bytes = 0;
 uint32_t scc12_second_4_bytes = 0;
 uint32_t fca11_first_4_bytes = 0;
-uint32_t fca11_second_4_bytes = 0;
+uint32_t fca11_second_4_bytes = 0;**/
 
 static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   int bus_fwd = -1;
@@ -123,9 +123,9 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       acc_obj_rel_spd_1 = (GET_BYTE(to_fwd, 5) & 0xF0);
       acc_obj_rel_spd_2 = GET_BYTE(to_fwd, 6);
 
-      scc11_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
+      /**scc11_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       scc11_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
-      escc_scc11(scc11_first_4_bytes, scc11_second_4_bytes);
+      escc_scc11(scc11_first_4_bytes, scc11_second_4_bytes);**/
     }
     // SCC12: Detect AEB, override and forward is_scc_msg && is_fca_msg
     if (addr == 1057) {
@@ -134,9 +134,9 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       aeb_cmd_act = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
       cf_vsm_warn_scc12 = ((GET_BYTE(to_fwd, 0) >> 4) & 0x2);
 
-      scc12_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
+      /**scc12_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       scc12_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
-      escc_scc12(scc12_first_4_bytes, scc12_second_4_bytes);
+      escc_scc12(scc12_first_4_bytes, scc12_second_4_bytes);**/
 
       if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
         block = 0;
@@ -150,9 +150,9 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       fca_cmd_act = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
       cf_vsm_warn_fca11 = ((GET_BYTE(to_fwd, 0) >> 2) & 0x2);
 
-      fca11_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
+      /**fca11_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       fca11_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
-      escc_fca11(fca11_first_4_bytes, fca11_second_4_bytes);
+      escc_fca11(fca11_first_4_bytes, fca11_second_4_bytes);**/
 
       if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
         block = 0;
