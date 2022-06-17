@@ -7,8 +7,10 @@ int block = 0;
 bool hyundai_fwd_aeb = false;
 // Custom ID for SMDPS fingerprinting
 void smdps_id(void);
-// Custom ID for ESCC fingerprinting
-void escc_id(void);
+// Custom ID for ESCC fingerprinting, lead car info (not radar tracks), AEB/FCW signals
+void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12,
+             uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1,
+             uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2);
 // Send SCC11
 void escc_scc11(uint32_t scc11_first_4_bytes, uint32_t scc11_second_4_bytes);
 // Send SCC12
@@ -48,6 +50,19 @@ static int nooutput_tx_lin_hook(int lin_num, uint8_t *data, int len) {
   UNUSED(len);
   return false;
 }
+
+// Initialize bytes to send to 2AB
+uint8_t fca_cmd_act = 0;
+uint8_t aeb_cmd_act = 0;
+uint8_t cf_vsm_warn_fca11 = 0;
+uint8_t cf_vsm_warn_scc12 = 0;
+uint8_t obj_valid = 0;
+uint8_t acc_obj_lat_pos_1 = 0;
+uint8_t acc_obj_lat_pos_2 = 0;
+uint8_t acc_obj_dist_1 = 0;
+uint8_t acc_obj_dist_2 = 0;
+uint8_t acc_obj_rel_spd_1 = 0;
+uint8_t acc_obj_rel_spd_2 = 0;
 
 uint32_t scc11_first_4_bytes = 0;
 uint32_t scc11_second_4_bytes = 0;
@@ -100,6 +115,14 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   if (bus_num == 2) {
     // SCC11: Forward radar points to sunnypilot/openpilot
     if (addr == 1056) {
+      obj_valid = (GET_BYTE(to_fwd, 2) & 0x1);
+      acc_obj_lat_pos_1 = GET_BYTE(to_fwd, 3);
+      acc_obj_lat_pos_2 = (GET_BYTE(to_fwd, 4) & 0x1);
+      acc_obj_dist_1 = (GET_BYTE(to_fwd, 4) & 0xFE);
+      acc_obj_dist_2 = (GET_BYTE(to_fwd, 5) & 0xF);
+      acc_obj_rel_spd_1 = (GET_BYTE(to_fwd, 5) & 0xF0);
+      acc_obj_rel_spd_2 = GET_BYTE(to_fwd, 6);
+
       scc11_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       scc11_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
       escc_scc11(scc11_first_4_bytes, scc11_second_4_bytes);
@@ -108,6 +131,8 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     if (addr == 1057) {
       int aeb_decel_cmd = GET_BYTE(to_fwd, 2);
       int aeb_req = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
+      aeb_cmd_act = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
+      cf_vsm_warn_scc12 = ((GET_BYTE(to_fwd, 0) >> 4) & 0x2);
 
       scc12_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       scc12_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
@@ -122,6 +147,8 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       int CR_VSM_DecCmd = GET_BYTE(to_fwd, 1);
       int FCA_CmdAct = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
       int CF_VSM_DecCmdAct = (GET_BYTE(to_fwd, 3) >> 7) & 1U;
+      fca_cmd_act = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
+      cf_vsm_warn_fca11 = ((GET_BYTE(to_fwd, 0) >> 2) & 0x2);
 
       fca11_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       fca11_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
@@ -131,7 +158,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
         block = 0;
       }
     }
-    escc_id();
+    escc_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12 , obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
     int block_msg = (block && (is_scc_msg || is_fca_msg) && !hyundai_fwd_aeb);
     if (!block_msg) {
       bus_fwd = 0;
