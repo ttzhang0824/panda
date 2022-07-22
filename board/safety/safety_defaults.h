@@ -4,7 +4,6 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 }
 
 int block = 0;
-bool hyundai_fwd_aeb = false;
 // Custom ID for SMDPS fingerprinting
 void smdps_id(void);
 // Custom ID for ESCC fingerprinting, lead car info (not radar tracks), AEB/FCW signals
@@ -78,29 +77,6 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   int is_scc_msg = ((addr == 1056) || (addr == 1057) || (addr == 1290) || (addr == 905));  // SCC11 || SCC12 || SCC13 || SCC14
   int is_fca_msg = ((addr == 909) || (addr == 1155));  // FCA11 || FCA12
 
-  if (addr == 909) {
-    int CR_VSM_DecCmd = GET_BYTE(to_fwd, 1);
-    int FCA_CmdAct = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
-    int CF_VSM_DecCmdAct = (GET_BYTE(to_fwd, 3) >> 7) & 1U;
-
-    if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
-      hyundai_fwd_aeb = true;
-    } else {
-      hyundai_fwd_aeb = false;
-    }
-  }
-
-  if (addr == 1057) {
-    int aeb_decel_cmd = GET_BYTE(to_fwd, 2);
-    int aeb_req = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
-
-    if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
-      hyundai_fwd_aeb = true;
-    } else {
-      hyundai_fwd_aeb = false;
-    }
-  }
-
   if (bus_num == 0) {
     // ESCC is receiving messages from sunnypilot/openpilot
     if (is_scc_msg || is_fca_msg) {
@@ -159,7 +135,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       }
     }
     escc_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12 , obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
-    int block_msg = (block && (is_scc_msg || is_fca_msg) && !hyundai_fwd_aeb);
+    int block_msg = (block && (is_scc_msg || is_fca_msg));
     if (!block_msg) {
       bus_fwd = 0;
     }
