@@ -105,34 +105,21 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     }
     // SCC12: Detect AEB, override and forward is_scc_msg && is_fca_msg
     if (addr == 1057) {
-      int aeb_decel_cmd = GET_BYTE(to_fwd, 2);
-      int aeb_req = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
       aeb_cmd_act = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
       cf_vsm_warn_scc12 = ((GET_BYTE(to_fwd, 0) >> 4) & 0x2);
 
       /**scc12_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       scc12_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
       escc_scc12(scc12_first_4_bytes, scc12_second_4_bytes);**/
-
-      if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
-        block = 0;
-      }
     }
     // FCA11: Detect AEB, override and forward is_scc_msg && is_fca_msg
     if (addr == 909) {
-      int CR_VSM_DecCmd = GET_BYTE(to_fwd, 1);
-      int FCA_CmdAct = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
-      int CF_VSM_DecCmdAct = (GET_BYTE(to_fwd, 3) >> 7) & 1U;
       fca_cmd_act = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
       cf_vsm_warn_fca11 = ((GET_BYTE(to_fwd, 0) >> 2) & 0x2);
 
       /**fca11_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       fca11_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
       escc_fca11(fca11_first_4_bytes, fca11_second_4_bytes);**/
-
-      if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
-        block = 0;
-      }
     }
     escc_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12 , obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
     int block_msg = (block && (is_scc_msg || is_fca_msg));
