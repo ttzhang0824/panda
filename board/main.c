@@ -110,13 +110,13 @@ void smdps_id(void) {
   CAN1->sTxMailBox[0].TIR = (0x2AAU << 21) | 1U;
 }
 
-void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12,
+void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12, uint8_t cr_vsm_deccmd,
              uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1,
              uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2) {
 
   uint8_t dat[8];
   dat[0] = (fca_cmd_act) | (cf_vsm_warn_fca11 << 1) | (aeb_cmd_act << 3) | (cf_vsm_warn_scc12 << 4);
-  dat[1] = 0x00;
+  dat[1] = (cr_vsm_deccmd);
   dat[2] = (obj_valid);
   dat[3] = (acc_obj_lat_pos_1);
   dat[4] = (acc_obj_dist_1) | (acc_obj_lat_pos_2);
