@@ -7,7 +7,7 @@ int block = 0;
 // Custom ID for SMDPS fingerprinting
 void smdps_id(void);
 // Custom ID for ESCC fingerprinting, lead car info (not radar tracks), AEB/FCW signals
-void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12, uint8_t cf_vsm_deccmdact, uint8_t cr_vsm_deccmd,
+void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12, uint8_t cf_vsm_deccmdact_scc12, uint8_t cf_vsm_deccmdact_fca11, uint8_t cr_vsm_deccmd,
              uint8_t obj_valid, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1,
              uint8_t acc_obj_dist_2, uint8_t acc_obj_rel_spd_1, uint8_t acc_obj_rel_spd_2);
 // Send SCC11
@@ -55,7 +55,8 @@ uint8_t fca_cmd_act = 0;
 uint8_t aeb_cmd_act = 0;
 uint8_t cf_vsm_warn_fca11 = 0;
 uint8_t cf_vsm_warn_scc12 = 0;
-uint8_t cf_vsm_deccmdact = 0;
+uint8_t cf_vsm_deccmdact_scc12 = 0;
+uint8_t cf_vsm_deccmdact_fca11 = 0;
 uint8_t cr_vsm_deccmd = 0;
 uint8_t obj_valid = 0;
 uint8_t acc_obj_lat_pos_1 = 0;
@@ -109,7 +110,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     if (addr == 1057) {
       aeb_cmd_act = (GET_BYTE(to_fwd, 6) >> 6) & 1U;
       cf_vsm_warn_scc12 = ((GET_BYTE(to_fwd, 0) >> 4) & 0x2);
-      cf_vsm_deccmdact = (GET_BYTE(to_send, 3) >> 7) & 1U;
+      cf_vsm_deccmdact_scc12 = (GET_BYTE(to_fwd, 0) >> 1) & 1U;
       cr_vsm_deccmd = GET_BYTE(to_fwd, 2);
 
       /**scc12_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
@@ -120,12 +121,13 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     if (addr == 909) {
       fca_cmd_act = (GET_BYTE(to_fwd, 2) >> 4) & 1U;
       cf_vsm_warn_fca11 = ((GET_BYTE(to_fwd, 0) >> 2) & 0x2);
+      cf_vsm_deccmdact_fca11 = ((GET_BYTE(to_fwd, 3) >> 7) & 1U);
 
       /**fca11_first_4_bytes = (GET_BYTE(to_fwd, 0) | GET_BYTE(to_fwd, 1) | GET_BYTE(to_fwd, 2) | GET_BYTE(to_fwd, 3));
       fca11_second_4_bytes = (GET_BYTE(to_fwd, 4) | GET_BYTE(to_fwd, 5) | GET_BYTE(to_fwd, 6) | GET_BYTE(to_fwd, 7));
       escc_fca11(fca11_first_4_bytes, fca11_second_4_bytes);**/
     }
-    escc_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12, cf_vsm_deccmdact, cr_vsm_deccmd, obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
+    escc_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12, cf_vsm_deccmdact_scc12, cf_vsm_deccmdact_fca11, cr_vsm_deccmd, obj_valid, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
     int block_msg = (block && (is_scc_msg || is_fca_msg));
     if (!block_msg) {
       bus_fwd = 0;
