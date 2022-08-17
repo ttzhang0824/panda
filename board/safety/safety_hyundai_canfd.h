@@ -127,7 +127,7 @@ static int hyundai_canfd_rx_hook(CANPacket_t *to_push) {
     if (addr == 0x1aa) {
       int cruise_button = (GET_BYTE(to_push, 4) >> 4) & 0x7U;
       int main_button = GET_BIT(to_push, 34U);
-      bool lfa_pressed = GET_BIT(to_push, 56U);
+      bool lfa_pressed = GET_BIT(to_push, 39U);
 
       if ((cruise_button == HYUNDAI_BTN_RESUME) || (cruise_button == HYUNDAI_BTN_SET) || (cruise_button == HYUNDAI_BTN_CANCEL) || (main_button != 0)) {
         hyundai_last_button_interaction = 0U;
