@@ -12,6 +12,7 @@ struct __attribute__((packed)) health_t {
   uint8_t ignition_line_pkt;
   uint8_t ignition_can_pkt;
   uint8_t controls_allowed_pkt;
+  uint8_t controls_allowed_long_pkt;
   uint8_t gas_interceptor_detected_pkt;
   uint8_t car_harness_status_pkt;
   uint8_t usb_power_mode_pkt;

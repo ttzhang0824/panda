@@ -85,7 +85,7 @@ int safety_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
 }
 
 bool get_longitudinal_allowed(void) {
-  return controls_allowed && !gas_pressed_prev;
+  return controls_allowed && controls_allowed_long && !gas_pressed_prev;
 }
 
 // Given a CRC-8 poly, generate a static lookup table to use with a fast CRC-8
@@ -174,7 +174,9 @@ void safety_tick(const addr_checks *rx_checks) {
       bool lagging = elapsed_time > MAX(rx_checks->check[i].msg[rx_checks->check[i].index].expected_timestep * MAX_MISSED_MSGS, 1e6);
       rx_checks->check[i].lagging = lagging;
       if (lagging) {
+        disengageFromBrakes = false;
         controls_allowed = 0;
+        controls_allowed_long = 0;
       }
     }
   }
@@ -194,7 +196,9 @@ bool is_msg_valid(AddrCheckStruct addr_list[], int index) {
   if (index != -1) {
     if ((!addr_list[index].valid_checksum) || (addr_list[index].wrong_counters >= MAX_WRONG_COUNTERS)) {
       valid = false;
+      disengageFromBrakes = false;
       controls_allowed = 0;
+      controls_allowed_long = 0;
     }
   }
   return valid;
@@ -240,13 +244,32 @@ bool addr_safety_check(CANPacket_t *to_push,
 void generic_rx_checks(bool stock_ecu_detected) {
   // exit controls on rising edge of gas press
   if (gas_pressed && !gas_pressed_prev && !(alternative_experience & ALT_EXP_DISABLE_DISENGAGE_ON_GAS)) {
+    disengageFromBrakes = false;
     controls_allowed = 0;
+    controls_allowed_long = 0;
   }
   gas_pressed_prev = gas_pressed;
 
   // exit controls on rising edge of brake press
   if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
-    controls_allowed = 0;
+    if (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE) {
+      disengageFromBrakes = true;
+      controls_allowed_long = 0;
+    } else if (alternative_experience & ALT_EXP_ENABLE_MADS) {
+      if (controls_allowed == 1) {
+        disengageFromBrakes = true;
+      }
+      controls_allowed = 0;
+      controls_allowed_long = 0;
+    } else {
+      controls_allowed = 0;
+      controls_allowed_long = 0;
+    }
+  } else if (!brake_pressed && disengageFromBrakes) {
+    disengageFromBrakes = false;
+    if (alternative_experience & ALT_EXP_ENABLE_MADS) {
+      controls_allowed = 1;
+    }
   }
   brake_pressed_prev = brake_pressed;
 
@@ -328,6 +351,7 @@ int set_safety_hooks(uint16_t mode, uint16_t param) {
   angle_meas.max = 0;
 
   controls_allowed = false;
+  controls_allowed_long = false;
   relay_malfunction_reset();
 
   int set_status = -1;  // not set
