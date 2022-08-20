@@ -26,7 +26,8 @@ const CanMsg HYUNDAI_CANFD_HDA1_TX_MSGS[] = {
 
 AddrCheckStruct hyundai_canfd_addr_checks[] = {
   {.msg = {{0x35, 1, 32, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 10000U},
-           {0x105, 0, 32, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 10000U}, { 0 }}},
+           {0x105, 0, 32, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 10000U},
+           {0x100, 0, 32, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 10000U}}},
   {.msg = {{0x65, 1, 32, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 10000U},
            {0x65, 0, 32, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 10000U}, { 0 }}},
   {.msg = {{0xa0, 1, 24, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 10000U},
@@ -49,8 +50,10 @@ uint16_t hyundai_canfd_crc_lut[256];
 
 const int HYUNDAI_PARAM_CANFD_HDA2 = 1;
 const int HYUNDAI_PARAM_CANFD_ALT_BUTTONS = 2;
+const int HYUNDAI_PARAM_CANFD_ALT_PEDALS = 4;
 bool hyundai_canfd_hda2 = false;
 bool hyundai_canfd_alt_buttons = false;
+bool hyundai_canfd_alt_pedals = false;
 
 
 static uint8_t hyundai_canfd_get_counter(CANPacket_t *to_push) {
@@ -151,13 +154,17 @@ static int hyundai_canfd_rx_hook(CANPacket_t *to_push) {
     // gas press
     if ((addr == 0x35) && hyundai_canfd_hda2) {
       gas_pressed = GET_BYTE(to_push, 5) != 0U;
+    } else if ((addr == 0x100) && hyundai_canfd_alt_pedals) {
+      gas_pressed = GET_BIT(to_push, 176U) != 0U;
     } else if ((addr == 0x105) && !hyundai_canfd_hda2) {
       gas_pressed = (GET_BIT(to_push, 103U) != 0U) || (GET_BYTE(to_push, 13) != 0U) || (GET_BIT(to_push, 112U) != 0U);
     } else {
     }
 
     // brake press
-    if (addr == 0x65) {
+    if ((addr == 0x100) && hyundai_canfd_alt_pedals) {
+      brake_pressed = GET_BIT(to_push, 32U) != 0U;
+    } else if (addr == 0x65) {
       brake_pressed = GET_BIT(to_push, 57U) != 0U;
     }
 
@@ -247,6 +254,7 @@ static const addr_checks* hyundai_canfd_init(uint16_t param) {
   hyundai_last_button_interaction = HYUNDAI_PREV_BUTTON_SAMPLES;
   hyundai_canfd_hda2 = GET_FLAG(param, HYUNDAI_PARAM_CANFD_HDA2);
   hyundai_canfd_alt_buttons = GET_FLAG(param, HYUNDAI_PARAM_CANFD_ALT_BUTTONS);
+  hyundai_canfd_alt_pedals = GET_FLAG(param, HYUNDAI_PARAM_CANFD_ALT_PEDALS);
 
   return &hyundai_canfd_rx_checks;
 }
