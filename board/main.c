@@ -113,8 +113,8 @@ void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11
   dat[1] = (cr_vsm_deccmd_scc12);
   dat[2] = (obj_valid) | (acc_objstatus << 1);
   dat[3] = (acc_obj_lat_pos_1);
-  dat[4] = (acc_obj_dist_1) | (acc_obj_lat_pos_2);
-  dat[5] = (acc_obj_rel_spd_1) | (acc_obj_dist_2);
+  dat[4] = (acc_obj_lat_pos_2) | (acc_obj_dist_1 << 1);
+  dat[5] = (acc_obj_dist_2) | (acc_obj_rel_spd_1 << 4);
   dat[6] = (acc_obj_rel_spd_2);
   dat[7] = (cr_vsm_deccmd_fca11);
   CAN1->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
