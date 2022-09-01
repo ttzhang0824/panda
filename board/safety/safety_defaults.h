@@ -3,6 +3,7 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
   return true;
 }
 
+int block = 0;
 // Custom ID for ESCC fingerprinting, lead car info (not radar tracks), AEB/FCW signals
 void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12, uint8_t cf_vsm_deccmdact_scc12, uint8_t cf_vsm_deccmdact_fca11, uint8_t cr_vsm_deccmd_scc12, uint8_t cr_vsm_deccmd_fca11,
              uint8_t obj_valid, uint8_t acc_objstatus, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1,
@@ -49,7 +50,6 @@ uint8_t acc_obj_rel_spd_2 = 0;
 static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   int bus_fwd = -1;
   int addr = GET_ADDR(to_fwd);
-  int block = 0;
 
   int is_scc_msg = ((addr == 1056) || (addr == 1057) || (addr == 1290) || (addr == 905));  // SCC11 || SCC12 || SCC13 || SCC14
   int is_fca_msg = ((addr == 909) || (addr == 1155));  // FCA11 || FCA12
@@ -58,8 +58,6 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     // ESCC is receiving messages from sunnypilot/openpilot
     if (is_scc_msg || is_fca_msg) {
       block = 1;
-    } else {
-      block = 0;
     }
     bus_fwd = 2;
   }
@@ -90,10 +88,6 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       cr_vsm_deccmd_fca11 = GET_BYTE(to_fwd, 1);
     }
     escc_id(fca_cmd_act, aeb_cmd_act, cf_vsm_warn_fca11, cf_vsm_warn_scc12, cf_vsm_deccmdact_scc12, cf_vsm_deccmdact_fca11, cr_vsm_deccmd_scc12, cr_vsm_deccmd_fca11, obj_valid, acc_objstatus, acc_obj_lat_pos_1, acc_obj_lat_pos_2, acc_obj_dist_1, acc_obj_dist_2, acc_obj_rel_spd_1, acc_obj_rel_spd_2);
-    if (((cf_vsm_warn_fca11 != 0) && ((cf_vsm_deccmdact_fca11 != 0) || (fca_cmd_act != 0))) ||
-        ((cf_vsm_warn_scc12 != 0) && ((cf_vsm_deccmdact_scc12 != 0) || (aeb_cmd_act != 0)))) {
-      block = 0;
-    }
     int block_msg = (block && (is_scc_msg || is_fca_msg));
     if (!block_msg) {
       bus_fwd = 0;
