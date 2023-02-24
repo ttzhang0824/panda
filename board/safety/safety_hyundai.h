@@ -1,4 +1,5 @@
 #include "safety_hyundai_common.h"
+#include "safety_hyundai_canfd.h"
 
 #define HYUNDAI_LIMITS(steer, rate_up, rate_down) { \
   .max_steer = (steer), \
@@ -31,6 +32,12 @@ const CanMsg HYUNDAI_TX_MSGS[] = {
   {1157, 0, 4}, // LFAHDA_MFC Bus 0
 };
 
+const CanMsg HYUNDAI_CAN_CANFD_TX_MSGS[] = {
+  {0x50, 0, 16},
+  {0x4F1, 1, 4},
+  {0x2A4, 0, 24},
+};
+
 const CanMsg HYUNDAI_LONG_TX_MSGS[] = {
   {832, 0, 8},  // LKAS11 Bus 0
   {1265, 0, 4}, // CLU11 Bus 0
@@ -61,10 +68,10 @@ AddrCheckStruct hyundai_addr_checks[] = {
 #define HYUNDAI_ADDR_CHECK_LEN (sizeof(hyundai_addr_checks) / sizeof(hyundai_addr_checks[0]))
 
 AddrCheckStruct hyundai_can_canfd_addr_checks[] = {
-  {.msg = {{608, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{902, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
-  {.msg = {{916, 0, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
-  {.msg = {{1057, 0, 8, .max_counter = 14U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+  {.msg = {{608, 1, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
+  {.msg = {{902, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+  {.msg = {{916, 1, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+  {.msg = {{1057, 1, 8, .max_counter = 14U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
 };
 #define HYUNDAI_CAN_CANFD_ADDR_CHECK_LEN (sizeof(hyundai_can_canfd_addr_checks) / sizeof(hyundai_can_canfd_addr_checks[0]))
 
@@ -187,7 +194,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
 
   // SCC12 is on bus 2 for camera-based SCC cars, bus 0 on all others
-  if (valid && (addr == 1057) && (((bus == 0) && !hyundai_camera_scc) || ((bus == 2) && hyundai_camera_scc))) {
+  if (valid && (addr == 1057) && (((bus == 0) && !hyundai_camera_scc) || ((bus == 1) && hyundai_can_canfd) || ((bus == 2) && hyundai_camera_scc))) {
     int cruise_engaged = 0;
     if (hyundai_can_canfd) {
       cruise_engaged = (GET_BYTE(to_push, 3) >> 4) & 0x3U;
@@ -198,7 +205,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     hyundai_common_cruise_state_check(cruise_engaged);
   }
 
-  if (valid && (bus == 0)) {
+  if (valid && ((bus == 0) || ((bus == 1) && hyundai_can_canfd))) {
     if (addr == 593) {
       int torque_driver_new = ((GET_BYTES_04(to_push) & 0x7ffU) * 0.79) - 808; // scale down new driver torque signal to match previous one
       // update array of samples
@@ -254,6 +261,8 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
     tx = msg_allowed(to_send, HYUNDAI_LONG_TX_MSGS, sizeof(HYUNDAI_LONG_TX_MSGS)/sizeof(HYUNDAI_LONG_TX_MSGS[0]));
   } else if (hyundai_camera_scc) {
     tx = msg_allowed(to_send, HYUNDAI_CAMERA_SCC_TX_MSGS, sizeof(HYUNDAI_CAMERA_SCC_TX_MSGS)/sizeof(HYUNDAI_CAMERA_SCC_TX_MSGS[0]));
+  } else if (hyundai_can_canfd) {
+    tx = msg_allowed(to_send, HYUNDAI_CAN_CANFD_TX_MSGS, sizeof(HYUNDAI_CAN_CANFD_TX_MSGS)/sizeof(HYUNDAI_CAN_CANFD_TX_MSGS[0]));
   } else {
     tx = msg_allowed(to_send, HYUNDAI_TX_MSGS, sizeof(HYUNDAI_TX_MSGS)/sizeof(HYUNDAI_TX_MSGS[0]));
   }
@@ -296,6 +305,16 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
 
     const SteeringLimits limits = hyundai_alt_limits ? HYUNDAI_STEERING_LIMITS_ALT : HYUNDAI_STEERING_LIMITS;
     if (steer_torque_cmd_checks(desired_torque, steer_req, limits)) {
+      tx = 0;
+    }
+  }
+
+  // CAN CAN-FD steering
+  if (addr == 0x50) {
+    int desired_torque = (((GET_BYTE(to_send, 6) & 0xFU) << 7U) | (GET_BYTE(to_send, 5) >> 1U)) - 1024U;
+    bool steer_req = GET_BIT(to_send, 52U) != 0U;
+
+    if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_CANFD_STEERING_LIMITS)) {
       tx = 0;
     }
   }
