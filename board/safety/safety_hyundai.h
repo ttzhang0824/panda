@@ -395,8 +395,18 @@ static int hyundai_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
   if (bus_num == 0) {
     bus_fwd = 2;
   }
-  if ((bus_num == 2) && (addr != 832) && (addr != 1157) && ((addr != 0x50) && (addr != 0x2a4) && hyundai_can_canfd)) {
-    bus_fwd = 0;
+  if (bus_num == 2) {
+    // LKAS11 for CAN, LKAS for CAN_CAN-FD
+    int is_lkas11_msg = (addr == 832) && !hyundai_can_canfd;
+    int is_lkas_msg = ((addr == 0x50) || (addr == 0x2a4)) && hyundai_can_canfd;
+
+    // LFAHDA_MFC for CAN
+    int is_lfahda_msg = (addr == 1157) && !hyundai_can_canfd;
+
+    int block_msg = is_lkas11_msg || is_lkas_msg || is_lfahda_msg;
+    if (!block_msg) {
+      bus_fwd = 0;
+    }
   }
 
   return bus_fwd;
