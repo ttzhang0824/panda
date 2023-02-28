@@ -313,62 +313,64 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
     tx = msg_allowed(to_send, HYUNDAI_TX_MSGS, sizeof(HYUNDAI_TX_MSGS)/sizeof(HYUNDAI_TX_MSGS[0]));
   }
 
-  // FCA11: Block any potential actuation
-  if (addr == 909) {
-    int CR_VSM_DecCmd = GET_BYTE(to_send, 1);
-    int FCA_CmdAct = GET_BIT(to_send, 20U);
-    int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
+  if (hyundai_can_canfd) {
+    // CAN CAN-FD steering
+    if (addr == 0x50) {
+      int desired_torque = (((GET_BYTE(to_send, 6) & 0xFU) << 7U) | (GET_BYTE(to_send, 5) >> 1U)) - 1024U;
+      bool steer_req = GET_BIT(to_send, 52U) != 0U;
 
-    if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
-      tx = 0;
+      if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_CAN_CANFD_STEERING_LIMITS)) {
+        tx = 0;
+      }
     }
-  }
+  } else {
+    // FCA11: Block any potential actuation
+    if (addr == 909) {
+      int CR_VSM_DecCmd = GET_BYTE(to_send, 1);
+      int FCA_CmdAct = GET_BIT(to_send, 20U);
+      int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
 
-  // ACCEL: safety check
-  if (addr == 1057) {
-    int desired_accel_raw = (((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) - 1023U;
-    int desired_accel_val = ((GET_BYTE(to_send, 5) << 3) | (GET_BYTE(to_send, 4) >> 5)) - 1023U;
-
-    int aeb_decel_cmd = GET_BYTE(to_send, 2);
-    int aeb_req = GET_BIT(to_send, 54U);
-
-    bool violation = false;
-
-    violation |= longitudinal_accel_checks(desired_accel_raw, HYUNDAI_LONG_LIMITS);
-    violation |= longitudinal_accel_checks(desired_accel_val, HYUNDAI_LONG_LIMITS);
-    violation |= (aeb_decel_cmd != 0);
-    violation |= (aeb_req != 0);
-
-    if (violation) {
-      tx = 0;
+      if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
+        tx = 0;
+      }
     }
-  }
 
-  // LKA STEER: safety check
-  if (addr == 832) {
-    int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x7ffU) - 1024U;
-    bool steer_req = GET_BIT(to_send, 27U) != 0U;
+    // ACCEL: safety check
+    if (addr == 1057) {
+      int desired_accel_raw = (((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) - 1023U;
+      int desired_accel_val = ((GET_BYTE(to_send, 5) << 3) | (GET_BYTE(to_send, 4) >> 5)) - 1023U;
 
-    const SteeringLimits limits = hyundai_alt_limits ? HYUNDAI_STEERING_LIMITS_ALT : HYUNDAI_STEERING_LIMITS;
-    if (steer_torque_cmd_checks(desired_torque, steer_req, limits)) {
-      tx = 0;
+      int aeb_decel_cmd = GET_BYTE(to_send, 2);
+      int aeb_req = GET_BIT(to_send, 54U);
+
+      bool violation = false;
+
+      violation |= longitudinal_accel_checks(desired_accel_raw, HYUNDAI_LONG_LIMITS);
+      violation |= longitudinal_accel_checks(desired_accel_val, HYUNDAI_LONG_LIMITS);
+      violation |= (aeb_decel_cmd != 0);
+      violation |= (aeb_req != 0);
+
+      if (violation) {
+        tx = 0;
+      }
     }
-  }
 
-  // CAN CAN-FD steering
-  if (addr == 0x50) {
-    int desired_torque = (((GET_BYTE(to_send, 6) & 0xFU) << 7U) | (GET_BYTE(to_send, 5) >> 1U)) - 1024U;
-    bool steer_req = GET_BIT(to_send, 52U) != 0U;
+    // LKA STEER: safety check
+    if (addr == 832) {
+      int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x7ffU) - 1024U;
+      bool steer_req = GET_BIT(to_send, 27U) != 0U;
 
-    if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_CAN_CANFD_STEERING_LIMITS)) {
-      tx = 0;
+      const SteeringLimits limits = hyundai_alt_limits ? HYUNDAI_STEERING_LIMITS_ALT : HYUNDAI_STEERING_LIMITS;
+      if (steer_torque_cmd_checks(desired_torque, steer_req, limits)) {
+        tx = 0;
+      }
     }
-  }
 
-  // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
-  if (addr == 2000) {
-    if ((GET_BYTES_04(to_send) != 0x00803E02U) || (GET_BYTES_48(to_send) != 0x0U)) {
-      tx = 0;
+    // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
+    if (addr == 2000) {
+      if ((GET_BYTES_04(to_send) != 0x00803E02U) || (GET_BYTES_48(to_send) != 0x0U)) {
+        tx = 0;
+      }
     }
   }
 
