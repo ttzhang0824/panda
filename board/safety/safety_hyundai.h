@@ -257,7 +257,8 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       brake_pressed = GET_BIT(to_push, 55U) != 0U;
     }
 
-    bool stock_ecu_detected = (addr == 832);
+    const int steer_addr = hyundai_can_canfd ? 0x50 : 832;
+    bool stock_ecu_detected = (addr == steer_addr) && (bus == 0);
 
     // If openpilot is controlling longitudinal we need to ensure the radar is turned off
     // Enforce by checking we don't see SCC12
