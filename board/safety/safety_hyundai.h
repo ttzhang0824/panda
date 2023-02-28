@@ -395,7 +395,7 @@ static int hyundai_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
   if (bus_num == 0) {
     bus_fwd = 2;
   }
-  if ((bus_num == 2) && (addr != 832) && (addr != 1157) && ((addr != 0x50) && hyundai_can_canfd)) {
+  if ((bus_num == 2) && (addr != 832) && (addr != 1157) && ((addr != 0x50) && (addr != 0x2a4) && hyundai_can_canfd)) {
     bus_fwd = 0;
   }
 
