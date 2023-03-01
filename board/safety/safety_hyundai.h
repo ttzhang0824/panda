@@ -319,7 +319,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
       int desired_torque = (((GET_BYTE(to_send, 6) & 0xFU) << 7U) | (GET_BYTE(to_send, 5) >> 1U)) - 1024U;
       bool steer_req = GET_BIT(to_send, 52U) != 0U;
 
-      if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_CAN_CANFD_STEERING_LIMITS)) {
+      if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_STEERING_LIMITS)) {
         tx = 0;
       }
     }
