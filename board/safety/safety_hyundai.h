@@ -17,24 +17,6 @@
   .has_steer_req_tolerance = true, \
 }
 
-const SteeringLimits HYUNDAI_CAN_CANFD_STEERING_LIMITS = {
-  .max_steer = 270,
-  .max_rt_delta = 112,
-  .max_rt_interval = 250000,
-  .max_rate_up = 2,
-  .max_rate_down = 3,
-  .driver_torque_allowance = 250,
-  .driver_torque_factor = 2,
-  .type = TorqueDriverLimited,
-
-  // the EPS faults when the steering angle is above a certain threshold for too long. to prevent this,
-  // we allow setting torque actuation bit to 0 while maintaining the requested torque value for two consecutive frames
-  .min_valid_request_frames = 89,
-  .max_invalid_request_frames = 2,
-  .min_valid_request_rt_interval = 810000,  // 810ms; a ~10% buffer on cutting every 90 frames
-  .has_steer_req_tolerance = true,
-};
-
 const SteeringLimits HYUNDAI_STEERING_LIMITS = HYUNDAI_LIMITS(384, 3, 7);
 const SteeringLimits HYUNDAI_STEERING_LIMITS_ALT = HYUNDAI_LIMITS(270, 2, 3);
 
@@ -77,20 +59,16 @@ const CanMsg HYUNDAI_CAMERA_SCC_TX_MSGS[] = {
 
 AddrCheckStruct hyundai_addr_checks[] = {
   {.msg = {{608, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
-           {881, 0, 8, .expected_timestep = 10000U}, { 0 }}},
-  {.msg = {{902, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{916, 0, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{1057, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+           {881, 0, 8, .expected_timestep = 10000U},
+           {608, 1, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}}},
+  {.msg = {{902, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U},
+           {902, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }}},
+  {.msg = {{916, 0, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 10000U},
+           {916, 1, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 20000U}, { 0 }}},
+  {.msg = {{1057, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U},
+           {1057, 1, 8, .max_counter = 14U, .expected_timestep = 20000U}, { 0 }}},
 };
 #define HYUNDAI_ADDR_CHECK_LEN (sizeof(hyundai_addr_checks) / sizeof(hyundai_addr_checks[0]))
-
-AddrCheckStruct hyundai_can_canfd_addr_checks[] = {
-  {.msg = {{608, 1, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{902, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
-  {.msg = {{916, 1, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
-  {.msg = {{1057, 1, 8, .max_counter = 14U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
-};
-#define HYUNDAI_CAN_CANFD_ADDR_CHECK_LEN (sizeof(hyundai_can_canfd_addr_checks) / sizeof(hyundai_can_canfd_addr_checks[0]))
 
 AddrCheckStruct hyundai_cam_scc_addr_checks[] = {
   {.msg = {{608, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
@@ -238,8 +216,11 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);
 
+  const int pt_bus = hyundai_can_canfd ? 1 : 0;
+  const int scc_bus = hyundai_camera_scc ? 2 : hyundai_can_canfd ? 1 : 0;
+
   // SCC12 is on bus 2 for camera-based SCC cars, bus 0 on all others
-  if (valid && (addr == 1057) && (((bus == 0) && !hyundai_camera_scc) || ((bus == 1) && hyundai_can_canfd) || ((bus == 2) && hyundai_camera_scc))) {
+  if (valid && (addr == 1057) && (bus == scc_bus)) {
     int cruise_engaged = 0;
     if (hyundai_can_canfd) {
       cruise_engaged = (GET_BYTE(to_push, 3) >> 4) & 0x3U;
@@ -250,7 +231,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     hyundai_common_cruise_state_check(cruise_engaged);
   }
 
-  if (valid && ((bus == 0) || ((bus == 1) && hyundai_can_canfd))) {
+  if (valid && (bus == pt_bus)) {
     if (addr == 593) {
       int torque_driver_new = ((GET_BYTES_04(to_push) & 0x7ffU) * 0.79) - 808; // scale down new driver torque signal to match previous one
       // update array of samples
@@ -313,64 +294,62 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
     tx = msg_allowed(to_send, HYUNDAI_TX_MSGS, sizeof(HYUNDAI_TX_MSGS)/sizeof(HYUNDAI_TX_MSGS[0]));
   }
 
-  if (hyundai_can_canfd) {
-    // CAN CAN-FD steering
-    if (addr == 0x50) {
-      int desired_torque = (((GET_BYTE(to_send, 6) & 0xFU) << 7U) | (GET_BYTE(to_send, 5) >> 1U)) - 1024U;
-      bool steer_req = GET_BIT(to_send, 52U) != 0U;
+  // FCA11: Block any potential actuation
+  if (addr == 909) {
+    int CR_VSM_DecCmd = GET_BYTE(to_send, 1);
+    int FCA_CmdAct = GET_BIT(to_send, 20U);
+    int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
 
-      if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_STEERING_LIMITS)) {
-        tx = 0;
-      }
+    if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
+      tx = 0;
     }
-  } else {
-    // FCA11: Block any potential actuation
-    if (addr == 909) {
-      int CR_VSM_DecCmd = GET_BYTE(to_send, 1);
-      int FCA_CmdAct = GET_BIT(to_send, 20U);
-      int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
+  }
 
-      if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
-        tx = 0;
-      }
+  // ACCEL: safety check
+  if (addr == 1057) {
+    int desired_accel_raw = (((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) - 1023U;
+    int desired_accel_val = ((GET_BYTE(to_send, 5) << 3) | (GET_BYTE(to_send, 4) >> 5)) - 1023U;
+
+    int aeb_decel_cmd = GET_BYTE(to_send, 2);
+    int aeb_req = GET_BIT(to_send, 54U);
+
+    bool violation = false;
+
+    violation |= longitudinal_accel_checks(desired_accel_raw, HYUNDAI_LONG_LIMITS);
+    violation |= longitudinal_accel_checks(desired_accel_val, HYUNDAI_LONG_LIMITS);
+    violation |= (aeb_decel_cmd != 0);
+    violation |= (aeb_req != 0);
+
+    if (violation) {
+      tx = 0;
     }
+  }
 
-    // ACCEL: safety check
-    if (addr == 1057) {
-      int desired_accel_raw = (((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) - 1023U;
-      int desired_accel_val = ((GET_BYTE(to_send, 5) << 3) | (GET_BYTE(to_send, 4) >> 5)) - 1023U;
+  // LKA STEER: safety check
+  if (addr == 832) {
+    int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x7ffU) - 1024U;
+    bool steer_req = GET_BIT(to_send, 27U) != 0U;
 
-      int aeb_decel_cmd = GET_BYTE(to_send, 2);
-      int aeb_req = GET_BIT(to_send, 54U);
-
-      bool violation = false;
-
-      violation |= longitudinal_accel_checks(desired_accel_raw, HYUNDAI_LONG_LIMITS);
-      violation |= longitudinal_accel_checks(desired_accel_val, HYUNDAI_LONG_LIMITS);
-      violation |= (aeb_decel_cmd != 0);
-      violation |= (aeb_req != 0);
-
-      if (violation) {
-        tx = 0;
-      }
+    const SteeringLimits limits = hyundai_alt_limits ? HYUNDAI_STEERING_LIMITS_ALT : HYUNDAI_STEERING_LIMITS;
+    if (steer_torque_cmd_checks(desired_torque, steer_req, limits)) {
+      tx = 0;
     }
+  }
 
-    // LKA STEER: safety check
-    if (addr == 832) {
-      int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x7ffU) - 1024U;
-      bool steer_req = GET_BIT(to_send, 27U) != 0U;
+  // CAN/CAN-FD steering
+  if (addr == 0x50) {
+    int desired_torque = (((GET_BYTE(to_send, 6) & 0xFU) << 7U) | (GET_BYTE(to_send, 5) >> 1U)) - 1024U;
+    bool steer_req = GET_BIT(to_send, 52U) != 0U;
 
-      const SteeringLimits limits = hyundai_alt_limits ? HYUNDAI_STEERING_LIMITS_ALT : HYUNDAI_STEERING_LIMITS;
-      if (steer_torque_cmd_checks(desired_torque, steer_req, limits)) {
-        tx = 0;
-      }
+    if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_STEERING_LIMITS)) {
+      tx = 0;
     }
+  }
 
-    // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
-    if (addr == 2000) {
-      if ((GET_BYTES_04(to_send) != 0x00803E02U) || (GET_BYTES_48(to_send) != 0x0U)) {
-        tx = 0;
-      }
+  // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
+  if (addr == 2000) {
+    if ((GET_BYTES_04(to_send) != 0x00803E02U) || (GET_BYTES_48(to_send) != 0x0U)) {
+      tx = 0;
     }
   }
 
@@ -398,7 +377,7 @@ static int hyundai_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
     bus_fwd = 2;
   }
   if (bus_num == 2) {
-    // LKAS11 for CAN, LKAS for CAN_CAN-FD
+    // LKAS11 for CAN, LKAS for CAN/CAN-FD
     int is_lkas11_msg = (addr == 832) && !hyundai_can_canfd;
     int is_lkas_msg = ((addr == 0x50) || (addr == 0x2a4)) && hyundai_can_canfd;
 
@@ -428,8 +407,6 @@ static const addr_checks* hyundai_init(uint16_t param) {
     hyundai_rx_checks = (addr_checks){hyundai_long_addr_checks, HYUNDAI_LONG_ADDR_CHECK_LEN};
   } else if (hyundai_camera_scc) {
     hyundai_rx_checks = (addr_checks){hyundai_cam_scc_addr_checks, HYUNDAI_CAM_SCC_ADDR_CHECK_LEN};
-  } else if (hyundai_can_canfd) {
-    hyundai_rx_checks = (addr_checks){hyundai_can_canfd_addr_checks, HYUNDAI_CAN_CANFD_ADDR_CHECK_LEN};
   } else {
     hyundai_rx_checks = (addr_checks){hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
   }
