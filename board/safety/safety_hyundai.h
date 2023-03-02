@@ -31,7 +31,7 @@ const CanMsg HYUNDAI_TX_MSGS[] = {
   {1157, 0, 4}, // LFAHDA_MFC Bus 0
 };
 
-const CanMsg HYUNDAI_CAN_CANFD_TX_MSGS[] = {
+const CanMsg HYUNDAI_CAN_CANFD_HDA2_TX_MSGS[] = {
   {0x50, 0, 16},
   {0x4F1, 1, 4},
   {0x2A4, 0, 24},
@@ -98,10 +98,10 @@ AddrCheckStruct hyundai_legacy_addr_checks[] = {
 };
 #define HYUNDAI_LEGACY_ADDR_CHECK_LEN (sizeof(hyundai_legacy_addr_checks) / sizeof(hyundai_legacy_addr_checks[0]))
 
-const int HYUNDAI_PARAM_CAN_CANFD = 128;
+const int HYUNDAI_PARAM_CAN_CANFD_HDA2 = 128;
 
 bool hyundai_legacy = false;
-bool hyundai_can_canfd = false;
+bool hyundai_can_canfd_hda2 = false;
 
 addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
 
@@ -120,7 +120,7 @@ static uint8_t hyundai_get_counter(CANPacket_t *to_push) {
   } else if (addr == 916) {
     cnt = (GET_BYTE(to_push, 1) >> 5) & 0x7U;
   } else if (addr == 1057) {
-    if (hyundai_can_canfd) {
+    if (hyundai_can_canfd_hda2) {
       cnt = (GET_BYTE(to_push, 1) >> 4) & 0xFU;
     } else {
       cnt = GET_BYTE(to_push, 7) & 0xFU;
@@ -144,7 +144,7 @@ static uint32_t hyundai_get_checksum(CANPacket_t *to_push) {
   } else if (addr == 916) {
     chksum = GET_BYTE(to_push, 6) & 0xFU;
   } else if (addr == 1057) {
-    if (hyundai_can_canfd) {
+    if (hyundai_can_canfd_hda2) {
       chksum = GET_BYTE(to_push, 0);
     } else {
       chksum = GET_BYTE(to_push, 7) >> 4;
@@ -158,7 +158,7 @@ static uint32_t hyundai_get_checksum(CANPacket_t *to_push) {
 static uint32_t hyundai_compute_checksum(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
 
-  // CAN_CANFD
+  // CAN_CANFD_HDA2
   int len = GET_LEN(to_push);
   uint32_t address = GET_ADDR(to_push);
 
@@ -178,7 +178,7 @@ static uint32_t hyundai_compute_checksum(CANPacket_t *to_push) {
     }
     chksum = (chksum ^ 9U) & 15U;
   } else {
-    if (hyundai_can_canfd && (addr == 1057)) {
+    if (hyundai_can_canfd_hda2 && (addr == 1057)) {
       for (int i = 2; i < len; i++) {
         chksum = (chksum << 8U) ^ hyundai_can_canfd_crc_lut[(chksum >> 8U) ^ GET_BYTE(to_push, i)];
       }
@@ -216,13 +216,13 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);
 
-  const int pt_bus = hyundai_can_canfd ? 1 : 0;
-  const int scc_bus = hyundai_camera_scc ? 2 : hyundai_can_canfd ? 1 : 0;
+  const int pt_bus = hyundai_can_canfd_hda2 ? 1 : 0;
+  const int scc_bus = hyundai_camera_scc ? 2 : hyundai_can_canfd_hda2 ? 1 : 0;
 
   // SCC12 is on bus 2 for camera-based SCC cars, bus 0 on all others
   if (valid && (addr == 1057) && (bus == scc_bus)) {
     int cruise_engaged = 0;
-    if (hyundai_can_canfd) {
+    if (hyundai_can_canfd_hda2) {
       cruise_engaged = (GET_BYTE(to_push, 3) >> 4) & 0x3U;
     } else {
       // 2 bits: 13-14
@@ -266,7 +266,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       brake_pressed = GET_BIT(to_push, 55U) != 0U;
     }
 
-    const int steer_addr = hyundai_can_canfd ? 0x50 : 832;
+    const int steer_addr = hyundai_can_canfd_hda2 ? 0x50 : 832;
     bool stock_ecu_detected = (addr == steer_addr) && (bus == 0);
 
     // If openpilot is controlling longitudinal we need to ensure the radar is turned off
@@ -288,8 +288,8 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
     tx = msg_allowed(to_send, HYUNDAI_LONG_TX_MSGS, sizeof(HYUNDAI_LONG_TX_MSGS)/sizeof(HYUNDAI_LONG_TX_MSGS[0]));
   } else if (hyundai_camera_scc) {
     tx = msg_allowed(to_send, HYUNDAI_CAMERA_SCC_TX_MSGS, sizeof(HYUNDAI_CAMERA_SCC_TX_MSGS)/sizeof(HYUNDAI_CAMERA_SCC_TX_MSGS[0]));
-  } else if (hyundai_can_canfd) {
-    tx = msg_allowed(to_send, HYUNDAI_CAN_CANFD_TX_MSGS, sizeof(HYUNDAI_CAN_CANFD_TX_MSGS)/sizeof(HYUNDAI_CAN_CANFD_TX_MSGS[0]));
+  } else if (hyundai_can_canfd_hda2) {
+    tx = msg_allowed(to_send, HYUNDAI_CAN_CANFD_HDA2_TX_MSGS, sizeof(HYUNDAI_CAN_CANFD_HDA2_TX_MSGS)/sizeof(HYUNDAI_CAN_CANFD_HDA2_TX_MSGS[0]));
   } else {
     tx = msg_allowed(to_send, HYUNDAI_TX_MSGS, sizeof(HYUNDAI_TX_MSGS)/sizeof(HYUNDAI_TX_MSGS[0]));
   }
@@ -378,11 +378,11 @@ static int hyundai_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
   }
   if (bus_num == 2) {
     // LKAS11 for CAN, LKAS for CAN/CAN-FD
-    int is_lkas11_msg = (addr == 832) && !hyundai_can_canfd;
-    int is_lkas_msg = ((addr == 0x50) || (addr == 0x2a4)) && hyundai_can_canfd;
+    int is_lkas11_msg = (addr == 832) && !hyundai_can_canfd_hda2;
+    int is_lkas_msg = ((addr == 0x50) || (addr == 0x2a4)) && hyundai_can_canfd_hda2;
 
     // LFAHDA_MFC for CAN
-    int is_lfahda_msg = (addr == 1157) && !hyundai_can_canfd;
+    int is_lfahda_msg = (addr == 1157) && !hyundai_can_canfd_hda2;
 
     int block_msg = is_lkas11_msg || is_lkas_msg || is_lfahda_msg;
     if (!block_msg) {
@@ -397,9 +397,9 @@ static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_common_init(param);
   hyundai_legacy = false;
   gen_crc_lookup_table_16(0x1021, hyundai_can_canfd_crc_lut);
-  hyundai_can_canfd = GET_FLAG(param, HYUNDAI_PARAM_CAN_CANFD);
+  hyundai_can_canfd_hda2 = GET_FLAG(param, HYUNDAI_PARAM_CAN_CANFD_HDA2);
 
-  if (hyundai_camera_scc || hyundai_can_canfd) {
+  if (hyundai_camera_scc || hyundai_can_canfd_hda2) {
     hyundai_longitudinal = false;
   }
 
