@@ -4,6 +4,7 @@ int default_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 }
 
 int block = 0;
+uint32_t sunnypilot_detected_last = 0;
 // Custom ID for ESCC fingerprinting, lead car info (not radar tracks), AEB/FCW signals
 void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11, uint8_t cf_vsm_warn_scc12, uint8_t cf_vsm_deccmdact_scc12, uint8_t cf_vsm_deccmdact_fca11, uint8_t cr_vsm_deccmd_scc12, uint8_t cr_vsm_deccmd_fca11,
              uint8_t obj_valid, uint8_t acc_objstatus, uint8_t acc_obj_lat_pos_1, uint8_t acc_obj_lat_pos_2, uint8_t acc_obj_dist_1,
@@ -55,11 +56,15 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   int is_fca_msg = ((addr == 909) || (addr == 1155));  // FCA11 || FCA12
 
   if (bus_num == 0) {
+    uint32_t ts = TIM2->CNT;
+    uint32_t ts_elapsed = get_ts_elapsed(ts, sunnypilot_detected_last);
+    // Stop blocking if we stop receiving messages from sunnypilot/openpilot after 750000
+    if (ts_elapsed > 750000) {
+      block = 0;
+    }
     // ESCC is receiving messages from sunnypilot/openpilot
     if (is_scc_msg || is_fca_msg) {
       block = 1;
-    } else {
-      block = 0;
     }
     bus_fwd = 2;
   }
