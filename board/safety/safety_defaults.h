@@ -65,6 +65,7 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     // ESCC is receiving messages from sunnypilot/openpilot
     if (is_scc_msg || is_fca_msg) {
       block = 1;
+      sunnypilot_detected_last = ts;
     }
     bus_fwd = 2;
   }
