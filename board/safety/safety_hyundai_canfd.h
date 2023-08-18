@@ -277,7 +277,7 @@ static int hyundai_canfd_tx_hook(CANPacket_t *to_send) {
     bool steer_req = GET_BIT(to_send, 52U) != 0U;
 
     // 2m/s margin
-    if ((hyundai_canfd_vego < (11.f + 2.f))) {
+    if ((hyundai_canfd_vego < (11.f + 2.f)) && hyundai_canfd_upstream_taco) {
       bool violation = false;
       uint32_t ts = microsecond_timer_get();
 
