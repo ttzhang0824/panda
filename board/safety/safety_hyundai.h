@@ -98,9 +98,10 @@ AddrCheckStruct hyundai_legacy_addr_checks[] = {
 };
 #define HYUNDAI_LEGACY_ADDR_CHECK_LEN (sizeof(hyundai_legacy_addr_checks) / sizeof(hyundai_legacy_addr_checks[0]))
 
-const int HYUNDAI_PARAM_CAN_CANFD_HDA2 = 128;
+const int HYUNDAI_PARAM_CAN_CANFD = 128;
 
 bool hyundai_legacy = false;
+bool hyundai_can_canfd = false;
 bool hyundai_can_canfd_hda2 = false;
 
 addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
@@ -396,7 +397,8 @@ static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_common_init(param);
   hyundai_legacy = false;
   gen_crc_lookup_table_16(0x1021, hyundai_can_canfd_crc_lut);
-  hyundai_can_canfd_hda2 = GET_FLAG(param, HYUNDAI_PARAM_CAN_CANFD_HDA2);
+  hyundai_can_canfd = GET_FLAG(param, HYUNDAI_PARAM_CAN_CANFD);
+  hyundai_can_canfd_hda2 = hyundai_can_canfd && hyundai_canfd_hda2;
 
   if (hyundai_camera_scc || hyundai_can_canfd_hda2) {
     hyundai_longitudinal = false;

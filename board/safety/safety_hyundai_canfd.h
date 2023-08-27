@@ -114,9 +114,7 @@ addr_checks hyundai_canfd_rx_checks = {hyundai_canfd_addr_checks, HYUNDAI_CANFD_
 uint16_t hyundai_canfd_crc_lut[256];
 
 
-const int HYUNDAI_PARAM_CANFD_HDA2 = 16;
 const int HYUNDAI_PARAM_CANFD_ALT_BUTTONS = 32;
-bool hyundai_canfd_hda2 = false;
 bool hyundai_canfd_alt_buttons = false;
 
 
@@ -342,7 +340,6 @@ static const addr_checks* hyundai_canfd_init(uint16_t param) {
   hyundai_common_init(param);
 
   gen_crc_lookup_table_16(0x1021, hyundai_canfd_crc_lut);
-  hyundai_canfd_hda2 = GET_FLAG(param, HYUNDAI_PARAM_CANFD_HDA2);
   hyundai_canfd_alt_buttons = GET_FLAG(param, HYUNDAI_PARAM_CANFD_ALT_BUTTONS);
 
   // no long for ICE yet
