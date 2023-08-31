@@ -151,11 +151,7 @@ static uint32_t hyundai_get_checksum(CANPacket_t *to_push) {
 }
 
 static uint32_t hyundai_compute_checksum(CANPacket_t *to_push) {
-  int addr = GET_ADDR(to_push);
-
-  // CAN_CANFD_HDA2
-  int len = GET_LEN(to_push);
-  uint32_t address = GET_ADDR(to_push);
+  uint32_t addr = GET_ADDR(to_push);
 
   uint16_t chksum = 0;
   if (addr == 902) {
@@ -174,15 +170,8 @@ static uint32_t hyundai_compute_checksum(CANPacket_t *to_push) {
     chksum = (chksum ^ 9U) & 15U;
   } else {
     if (hyundai_can_canfd_hda2 && (addr == 1057)) {
-      for (int i = 2; i < len; i++) {
-        chksum = (chksum << 8U) ^ hyundai_canfd_crc_lut[(chksum >> 8U) ^ GET_BYTE(to_push, i)];
-      }
-
-      // Add address to crc
-      chksum = (chksum << 8U) ^ hyundai_canfd_crc_lut[(chksum >> 8U) ^ ((address >> 0U) & 0xFFU)];
-      chksum = (chksum << 8U) ^ hyundai_canfd_crc_lut[(chksum >> 8U) ^ ((address >> 8U) & 0xFFU)];
-
-      chksum ^= 0x5f29U;
+      int len = GET_LEN(to_push);
+      chksum = hyundai_common_canfd_compute_checksum(to_push, len, addr, chksum);
     } else {
       // sum of nibbles
       for (int i = 0; i < 8; i++) {

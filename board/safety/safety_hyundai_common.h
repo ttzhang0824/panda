@@ -90,4 +90,28 @@ void hyundai_common_cruise_buttons_check(const int cruise_button, const int main
   }
 }
 
+uint16_t hyundai_common_canfd_compute_checksum(CANPacket_t *to_push, int len, uint32_t address, uint16_t crc) {
+  for (int i = 2; i < len; i++) {
+    crc = (crc << 8U) ^ hyundai_canfd_crc_lut[(crc >> 8U) ^ GET_BYTE(to_push, i)];
+  }
+
+  // Add address to crc
+  crc = (crc << 8U) ^ hyundai_canfd_crc_lut[(crc >> 8U) ^ ((address >> 0U) & 0xFFU)];
+  crc = (crc << 8U) ^ hyundai_canfd_crc_lut[(crc >> 8U) ^ ((address >> 8U) & 0xFFU)];
+
+  if (len == 8) {
+    crc ^= 0x5f29U;
+  } else if (len == 16) {
+    crc ^= 0x041dU;
+  } else if (len == 24) {
+    crc ^= 0x819dU;
+  } else if (len == 32) {
+    crc ^= 0x9f5bU;
+  } else {
+
+  }
+
+  return crc;
+}
+
 #endif
