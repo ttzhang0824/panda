@@ -107,9 +107,6 @@ bool hyundai_can_canfd_hda2 = false;
 addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
 
 
-uint16_t hyundai_can_canfd_crc_lut[256];
-
-
 static uint8_t hyundai_get_counter(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
 
@@ -181,12 +178,12 @@ static uint32_t hyundai_compute_checksum(CANPacket_t *to_push) {
   } else {
     if (hyundai_can_canfd_hda2 && (addr == 1057)) {
       for (int i = 2; i < len; i++) {
-        chksum = (chksum << 8U) ^ hyundai_can_canfd_crc_lut[(chksum >> 8U) ^ GET_BYTE(to_push, i)];
+        chksum = (chksum << 8U) ^ hyundai_canfd_crc_lut[(chksum >> 8U) ^ GET_BYTE(to_push, i)];
       }
 
       // Add address to crc
-      chksum = (chksum << 8U) ^ hyundai_can_canfd_crc_lut[(chksum >> 8U) ^ ((address >> 0U) & 0xFFU)];
-      chksum = (chksum << 8U) ^ hyundai_can_canfd_crc_lut[(chksum >> 8U) ^ ((address >> 8U) & 0xFFU)];
+      chksum = (chksum << 8U) ^ hyundai_canfd_crc_lut[(chksum >> 8U) ^ ((address >> 0U) & 0xFFU)];
+      chksum = (chksum << 8U) ^ hyundai_canfd_crc_lut[(chksum >> 8U) ^ ((address >> 8U) & 0xFFU)];
 
       chksum ^= 0x5f29U;
     } else {
@@ -396,9 +393,11 @@ static int hyundai_fwd_hook(int bus_num, int addr) {
 static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_common_init(param);
   hyundai_legacy = false;
-  gen_crc_lookup_table_16(0x1021, hyundai_can_canfd_crc_lut);
-  hyundai_can_canfd = GET_FLAG(param, HYUNDAI_PARAM_CAN_CANFD);
   hyundai_can_canfd_hda2 = hyundai_can_canfd && hyundai_canfd_hda2;
+
+  if (hyundai_can_canfd) {
+    gen_crc_lookup_table_16(0x1021, hyundai_canfd_crc_lut);
+  }
 
   if (hyundai_camera_scc || hyundai_can_canfd_hda2) {
     hyundai_longitudinal = false;
