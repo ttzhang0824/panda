@@ -98,8 +98,12 @@ AddrCheckStruct hyundai_legacy_addr_checks[] = {
 };
 #define HYUNDAI_LEGACY_ADDR_CHECK_LEN (sizeof(hyundai_legacy_addr_checks) / sizeof(hyundai_legacy_addr_checks[0]))
 
+
+const int HYUNDAI_PARAM_CAN_CANFD = 256;
 bool hyundai_legacy = false;
+bool hyundai_can_canfd = false;
 bool hyundai_can_canfd_hda2 = false;
+
 
 addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
 
@@ -375,6 +379,8 @@ static int hyundai_fwd_hook(int bus_num, int addr) {
 static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_common_init(param);
   hyundai_legacy = false;
+  hyundai_can_canfd = GET_FLAG(param, HYUNDAI_PARAM_CAN_CANFD);
+
   hyundai_can_canfd_hda2 = hyundai_can_canfd && hyundai_canfd_hda2;
 
   if (hyundai_can_canfd) {
