@@ -241,8 +241,8 @@ static int hyundai_canfd_rx_hook(CANPacket_t *to_push) {
     if (addr == 0xa0) {
       uint32_t front_left_speed = GET_BYTES(to_push, 8, 2);
       uint32_t rear_right_speed = GET_BYTES(to_push, 14, 2);
-      hyundai_canfd_front_left_vego = (float)speed * 0.277778f * 0.03125f;
-      hyundai_canfd_rear_right_vego = (float)speed * 0.277778f * 0.03125f;
+      hyundai_canfd_front_left_vego = (float)front_left_speed * 0.277778f * 0.03125f;
+      hyundai_canfd_rear_right_vego = (float)rear_right_speed * 0.277778f * 0.03125f;
       vehicle_moving = (front_left_speed > HYUNDAI_STANDSTILL_THRSLD) || (rear_right_speed > HYUNDAI_STANDSTILL_THRSLD);
     }
   }
