@@ -1,6 +1,8 @@
 #include "safety_declarations.h"
 #include "can_definitions.h"
 
+#include "safety_sunnypilot_common.h"
+
 // include the safety policies.
 #include "safety/safety_defaults.h"
 #include "safety/safety_honda.h"
@@ -175,8 +177,8 @@ void safety_tick(const addr_checks *rx_checks) {
       rx_checks->check[i].lagging = lagging;
       if (lagging) {
         disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
+        controls_allowed = false;
+        controls_allowed_long = false;
       }
 
       if (lagging || !is_msg_valid(rx_checks->check, i)) {
@@ -203,8 +205,8 @@ bool is_msg_valid(AddrCheckStruct addr_list[], int index) {
     if (!addr_list[index].valid_checksum || !addr_list[index].valid_quality_flag || (addr_list[index].wrong_counters >= MAX_WRONG_COUNTERS)) {
       valid = false;
       disengageFromBrakes = false;
-      controls_allowed = 0;
-      controls_allowed_long = 0;
+      controls_allowed = false;
+      controls_allowed_long = false;
     }
   }
   return valid;
@@ -262,54 +264,24 @@ void generic_rx_checks(bool stock_ecu_detected) {
   // exit controls on rising edge of gas press
   if (gas_pressed && !gas_pressed_prev && !(alternative_experience & ALT_EXP_DISABLE_DISENGAGE_ON_GAS)) {
     disengageFromBrakes = false;
-    controls_allowed = 0;
-    controls_allowed_long = 0;
+    controls_allowed = false;
+    controls_allowed_long = false;
   }
   gas_pressed_prev = gas_pressed;
 
   // exit controls on rising edge of brake press
   if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
-    if (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE) {
-      disengageFromBrakes = true;
-      controls_allowed_long = 0;
-    } else if (alternative_experience & ALT_EXP_ENABLE_MADS) {
-      if (controls_allowed == 1) {
-        disengageFromBrakes = true;
-      }
-      controls_allowed = 0;
-      controls_allowed_long = 0;
-    } else {
-      controls_allowed = 0;
-      controls_allowed_long = 0;
-    }
+    mads_exit_controls_check();
   } else if (!brake_pressed && disengageFromBrakes) {
-    disengageFromBrakes = false;
-    if (alternative_experience & ALT_EXP_ENABLE_MADS) {
-      controls_allowed = 1;
-    }
+    mads_resume_controls_check();
   }
   brake_pressed_prev = brake_pressed;
 
   // exit controls on rising edge of regen paddle
   if (regen_braking && (!regen_braking_prev || vehicle_moving)) {
-    if (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE) {
-      disengageFromBrakes = true;
-      controls_allowed_long = 0;
-    } else if (alternative_experience & ALT_EXP_ENABLE_MADS) {
-      if (controls_allowed == 1) {
-        disengageFromBrakes = true;
-      }
-      controls_allowed = 0;
-      controls_allowed_long = 0;
-    } else {
-      controls_allowed = 0;
-      controls_allowed_long = 0;
-    }
+    mads_exit_controls_check();
   } else if (!regen_braking && disengageFromBrakes) {
-    disengageFromBrakes = false;
-    if (alternative_experience & ALT_EXP_ENABLE_MADS) {
-      controls_allowed = 1;
-    }
+    mads_resume_controls_check();
   }
   regen_braking_prev = regen_braking;
 
@@ -551,6 +523,12 @@ bool longitudinal_accel_checks(int desired_accel, const LongitudinalLimits limit
 
 bool longitudinal_speed_checks(int desired_speed, const LongitudinalLimits limits) {
   return !get_longitudinal_allowed() && (desired_speed != limits.inactive_speed);
+}
+
+bool longitudinal_transmission_rpm_checks(int desired_transmission_rpm, const LongitudinalLimits limits) {
+  bool transmission_rpm_valid = get_longitudinal_allowed() && !max_limit_check(desired_transmission_rpm, limits.max_transmission_rpm, limits.min_transmission_rpm);
+  bool transmission_rpm_inactive = desired_transmission_rpm == limits.inactive_transmission_rpm;
+  return !(transmission_rpm_valid || transmission_rpm_inactive);
 }
 
 bool longitudinal_gas_checks(int desired_gas, const LongitudinalLimits limits) {

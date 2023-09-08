@@ -80,22 +80,16 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
   bool valid = addr_safety_check(to_push, &toyota_rx_checks,
                                  toyota_get_checksum, toyota_compute_checksum, NULL, NULL);
 
-  if (valid && (GET_BUS(to_push) == 2U)) {
+  if (valid && (GET_BUS(to_push) == 2U) && mads_enabled) {
     int addr = GET_ADDR(to_push);
     if ((addr == 0x412) && !toyota_mads_lta_msg) {
-      bool set_me = (GET_BYTE(to_push, 0) & 0xC0) > 0; // LKAS_HUD
-      if (set_me && !set_me_prev && mads_enabled) {
-        controls_allowed = 1;
-      }
-      set_me_prev = set_me;
+      bool lkas_pressed = (GET_BYTE(to_push, 0) & 0xC0) > 0; // LKAS_HUD
+      mads_lkas_button_check(lkas_pressed);
     }
 
     if ((addr == 0x412) && toyota_mads_lta_msg) {
-      bool set_me = (GET_BYTE(to_push, 3) & 0x40) > 0; // LDA_ON_MESSAGE
-      if (set_me && !set_me_prev && mads_enabled) {
-        controls_allowed = 1;
-      }
-      set_me_prev = set_me;
+      bool lkas_pressed = (GET_BYTE(to_push, 3) & 0x40) > 0; // LDA_ON_MESSAGE
+      mads_lkas_button_check(lkas_pressed);
     }
   } else if (valid && (GET_BUS(to_push) == 0U)) {
     int addr = GET_ADDR(to_push);
@@ -131,15 +125,7 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
 
     if (addr == 0x1D3) {
       acc_main_on = GET_BIT(to_push, 15U) != 0U;
-      if (acc_main_on && mads_enabled) {
-        controls_allowed = 1;
-      }
-      if (!acc_main_on && acc_main_on_prev) {
-        disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
-      }
-      acc_main_on_prev = acc_main_on;
+      mads_acc_main_check(acc_main_on);
     }
 
     if (addr == 0xaa) {

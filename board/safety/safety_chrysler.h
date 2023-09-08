@@ -44,45 +44,45 @@ typedef struct {
 
 // CAN messages for Chrysler/Jeep platforms
 const ChryslerAddrs CHRYSLER_ADDRS = {
-  .EPS_2            = 544,  // EPS driver input torque
-  .ESP_1            = 320,  // Brake pedal and vehicle speed
-  .ESP_8            = 284,  // Brake pedal and vehicle speed
-  .ECM_5            = 559,  // Throttle position sensor
-  .DAS_3            = 500,  // ACC engagement states from DASM
-  .DAS_6            = 678,  // LKAS HUD and auto headlight control from DASM
-  .LKAS_COMMAND     = 658,  // LKAS controls from DASM
-  .LKAS_HEARTBIT    = 729,  // LKAS HEARTBIT from DASM
-  .CRUISE_BUTTONS   = 571,  // Cruise control buttons
-  .CENTER_STACK_1   = 816,  // LKAS Button
-  .CENTER_STACK_2   = 650,  // LKAS Button
+  .EPS_2            = 0x220,  // EPS driver input torque
+  .ESP_1            = 0x140,  // Brake pedal and vehicle speed
+  .ESP_8            = 0x11C,  // Brake pedal and vehicle speed
+  .ECM_5            = 0x22F,  // Throttle position sensor
+  .DAS_3            = 0x1F4,  // ACC engagement states from DASM
+  .DAS_6            = 0x2A6,  // LKAS HUD and auto headlight control from DASM
+  .LKAS_COMMAND     = 0x292,  // LKAS controls from DASM
+  .CRUISE_BUTTONS   = 0x23B,  // Cruise control buttons
+  .LKAS_HEARTBIT    = 0x2D9,  // LKAS HEARTBIT from DASM
+  .CENTER_STACK_1   = 0x330,  // LKAS Button
+  .CENTER_STACK_2   = 0x28A,  // LKAS Button
 };
 
 // CAN messages for the 5th gen RAM DT platform
 const ChryslerAddrs CHRYSLER_RAM_DT_ADDRS = {
-  .EPS_2            = 49,   // EPS driver input torque
-  .ESP_1            = 131,  // Brake pedal and vehicle speed
-  .ESP_8            = 121,  // Brake pedal and vehicle speed
-  .ECM_5            = 157,  // Throttle position sensor
-  .DAS_3            = 153,  // ACC engagement states from DASM
-  .DAS_6            = 250,  // LKAS HUD and auto headlight control from DASM
-  .LKAS_COMMAND     = 166,  // LKAS controls from DASM
-  .CRUISE_BUTTONS   = 177,  // Cruise control buttons
-  .CENTER_STACK_1   = 221,  // LKAS Button
-  .CENTER_STACK_2   = 650,  // LKAS Button
+  .EPS_2            = 0x31,   // EPS driver input torque
+  .ESP_1            = 0x83,   // Brake pedal and vehicle speed
+  .ESP_8            = 0x79,   // Brake pedal and vehicle speed
+  .ECM_5            = 0x9D,   // Throttle position sensor
+  .DAS_3            = 0x99,   // ACC engagement states from DASM
+  .DAS_6            = 0xFA,   // LKAS HUD and auto headlight control from DASM
+  .LKAS_COMMAND     = 0xA6,   // LKAS controls from DASM
+  .CRUISE_BUTTONS   = 0xB1,   // Cruise control buttons
+  .CENTER_STACK_1   = 0xDD,   // LKAS Button
+  .CENTER_STACK_2   = 0x28A,  // LKAS Button
 };
 
 // CAN messages for the 5th gen RAM HD platform
 const ChryslerAddrs CHRYSLER_RAM_HD_ADDRS = {
-  .EPS_2            = 544,  // EPS driver input torque
-  .ESP_1            = 320,  // Brake pedal and vehicle speed
-  .ESP_8            = 284,  // Brake pedal and vehicle speed
-  .ECM_5            = 559,  // Throttle position sensor
-  .DAS_3            = 500,  // ACC engagement states from DASM
-  .DAS_6            = 629,  // LKAS HUD and auto headlight control from DASM
-  .LKAS_COMMAND     = 630,  // LKAS controls from DASM
-  .CRUISE_BUTTONS   = 570,  // Cruise control buttons
-  .CENTER_STACK_1   = 816,  // LKAS Button
-  .CENTER_STACK_2   = 650,  // LKAS Button
+  .EPS_2            = 0x220,  // EPS driver input torque
+  .ESP_1            = 0x140,  // Brake pedal and vehicle speed
+  .ESP_8            = 0x11C,  // Brake pedal and vehicle speed
+  .ECM_5            = 0x22F,  // Throttle position sensor
+  .DAS_3            = 0x1F4,  // ACC engagement states from DASM
+  .DAS_6            = 0x275,  // LKAS HUD and auto headlight control from DASM
+  .LKAS_COMMAND     = 0x276,  // LKAS controls from DASM
+  .CRUISE_BUTTONS   = 0x23A,  // Cruise control buttons
+  .CENTER_STACK_1   = 0x330,  // LKAS Button
+  .CENTER_STACK_2   = 0x28A,  // LKAS Button
 };
 
 const CanMsg CHRYSLER_TX_MSGS[] = {
@@ -211,15 +211,7 @@ static int chrysler_rx_hook(CANPacket_t *to_push) {
       pcm_cruise_check(cruise_engaged);
 
       acc_main_on = GET_BIT(to_push, 20U) != 0U;
-      if (acc_main_on && mads_enabled) {
-        controls_allowed = 1;
-      }
-      if (!acc_main_on && acc_main_on_prev) {
-        disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
-      }
-      acc_main_on_prev = acc_main_on;
+      mads_acc_main_check(acc_main_on);
     }
 
     // TODO: use the same message for both
@@ -269,7 +261,9 @@ static int chrysler_tx_hook(CANPacket_t *to_send) {
 
     const SteeringLimits limits = (chrysler_platform == CHRYSLER_PACIFICA) ? CHRYSLER_STEERING_LIMITS :
                                   (chrysler_platform == CHRYSLER_RAM_DT) ? CHRYSLER_RAM_DT_STEERING_LIMITS : CHRYSLER_RAM_HD_STEERING_LIMITS;
-    if (steer_torque_cmd_checks(desired_torque, -1, limits)) {
+
+    bool steer_req = (chrysler_platform == CHRYSLER_PACIFICA) ? (GET_BIT(to_send, 4U) != 0U) : ((GET_BYTE(to_send, 3) & 0x7U) == 2U);
+    if (steer_torque_cmd_checks(desired_torque, steer_req, limits)) {
       tx = 0;
     }
   }

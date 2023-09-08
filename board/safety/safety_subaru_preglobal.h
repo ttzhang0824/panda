@@ -66,15 +66,7 @@ static int subaru_preglobal_rx_hook(CANPacket_t *to_push) {
       pcm_cruise_check(cruise_engaged);
 
       acc_main_on = GET_BIT(to_push, 48U) != 0U;
-      if (acc_main_on && mads_enabled) {
-        controls_allowed = 1;
-      }
-      if (!acc_main_on && acc_main_on_prev) {
-        disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
-      }
-      acc_main_on_prev = acc_main_on;
+      mads_acc_main_check(acc_main_on);
     }
 
     // update vehicle moving with any non-zero wheel speed
@@ -109,7 +101,9 @@ static int subaru_preglobal_tx_hook(CANPacket_t *to_send) {
     int desired_torque = ((GET_BYTES(to_send, 0, 4) >> 8) & 0x1FFFU);
     desired_torque = -1 * to_signed(desired_torque, 13);
 
-    if (steer_torque_cmd_checks(desired_torque, -1, SUBARU_PG_STEERING_LIMITS)) {
+    bool steer_req = (GET_BIT(to_send, 24U) != 0U);
+
+    if (steer_torque_cmd_checks(desired_torque, steer_req, SUBARU_PG_STEERING_LIMITS)) {
       tx = 0;
     }
 

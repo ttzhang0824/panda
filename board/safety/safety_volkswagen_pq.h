@@ -129,15 +129,7 @@ static int volkswagen_pq_rx_hook(CANPacket_t *to_push) {
         // ACC main switch on is a prerequisite to enter controls, exit controls immediately on main switch off
         // Signal: Motor_5.GRA_Hauptschalter
         acc_main_on = GET_BIT(to_push, 50U);
-        if (acc_main_on && mads_enabled) {
-          controls_allowed = 1;
-        }
-        if (!acc_main_on && acc_main_on_prev) {
-          disengageFromBrakes = false;
-          controls_allowed = 0;
-          controls_allowed_long = 0;
-        }
-        acc_main_on_prev = acc_main_on;
+        mads_acc_main_check(acc_main_on);
       }
 
       if (addr == MSG_GRA_NEU) {
@@ -155,7 +147,7 @@ static int volkswagen_pq_rx_hook(CANPacket_t *to_push) {
         // Exit controls on rising edge of Cancel, override Set/Resume if present simultaneously
         // Signal: GRA_ACC_01.GRA_Abbrechen
         if (GET_BIT(to_push, 9U) == 1U) {
-          controls_allowed_long = 0;
+          controls_allowed_long = false;
         }
       }
     } else {

@@ -156,16 +156,7 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
         pcm_cruise_check(cruise_engaged);
       }
 
-      if (acc_main_on && mads_enabled) {
-        controls_allowed = true;
-      }
-
-      if (!acc_main_on && acc_main_on_prev) {
-        disengageFromBrakes = false;
-        controls_allowed = false;
-        controls_allowed_long = false;
-      }
-      acc_main_on_prev = acc_main_on;
+      mads_acc_main_check(acc_main_on);
     }
 
     if (addr == MSG_GRA_ACC_01) {
@@ -231,7 +222,9 @@ static int volkswagen_mqb_tx_hook(CANPacket_t *to_send) {
       desired_torque *= -1;
     }
 
-    if (steer_torque_cmd_checks(desired_torque, -1, VOLKSWAGEN_MQB_STEERING_LIMITS)) {
+    bool steer_req = GET_BIT(to_send, 30U) != 0U;
+
+    if (steer_torque_cmd_checks(desired_torque, steer_req, VOLKSWAGEN_MQB_STEERING_LIMITS)) {
       tx = 0;
     }
   }
