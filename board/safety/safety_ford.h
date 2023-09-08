@@ -237,7 +237,7 @@ static int ford_rx_hook(CANPacket_t *to_push) {
       // Signal: Veh_V_ActlEng
       float filtered_pcm_speed = ((GET_BYTE(to_push, 6) << 8) | GET_BYTE(to_push, 7)) * 0.01 / 3.6;
       if (ABS(filtered_pcm_speed - ((float)vehicle_speed.values[0] / VEHICLE_SPEED_FACTOR)) > FORD_MAX_SPEED_DELTA) {
-        controls_allowed_long = 0;
+        controls_allowed_long = false;
       }
     }
 
@@ -268,15 +268,7 @@ static int ford_rx_hook(CANPacket_t *to_push) {
       pcm_cruise_check(cruise_engaged);
 
       acc_main_on = (cruise_state == 3U) || (cruise_state == 4U) || (cruise_state == 5U);
-      if (acc_main_on && mads_enabled) {
-        controls_allowed = 1;
-      }
-      if (!acc_main_on && acc_main_on_prev) {
-        disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
-      }
-      acc_main_on_prev = acc_main_on;
+      mads_acc_main_check(acc_main_on);
     }
 
     // If steering controls messages are received on the destination bus, it's an indication

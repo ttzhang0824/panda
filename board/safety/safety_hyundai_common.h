@@ -8,7 +8,7 @@ const int HYUNDAI_PARAM_CAMERA_SCC = 8;
 const int HYUNDAI_PARAM_ALT_LIMITS = 64; // TODO: shift this down with the rest of the common flags
 
 const uint8_t HYUNDAI_PREV_BUTTON_SAMPLES = 8;  // roughly 160 ms
-const uint32_t HYUNDAI_STANDSTILL_THRSLD = 30;  // ~1kph
+const uint32_t HYUNDAI_STANDSTILL_THRSLD = 12;  // 0.375 kph
 
 enum {
   HYUNDAI_BTN_NONE = 0,
@@ -48,12 +48,12 @@ void hyundai_common_cruise_state_check(const int cruise_engaged) {
   // enter controls on rising edge of ACC and recent user button press, exit controls when ACC off
   if (!hyundai_longitudinal) {
     if (cruise_engaged && !cruise_engaged_prev && (hyundai_last_button_interaction < HYUNDAI_PREV_BUTTON_SAMPLES)) {
-      controls_allowed = 1;
-      controls_allowed_long = 1;
+      controls_allowed = true;
+      controls_allowed_long = true;
     }
 
     if (!cruise_engaged) {
-      controls_allowed_long = 0;
+      controls_allowed_long = false;
     }
     cruise_engaged_prev = cruise_engaged;
   }
@@ -72,13 +72,13 @@ void hyundai_common_cruise_buttons_check(const int cruise_button, const int main
     bool set = (cruise_button != HYUNDAI_BTN_SET) && (cruise_button_prev == HYUNDAI_BTN_SET);
     bool res = (cruise_button != HYUNDAI_BTN_RESUME) && (cruise_button_prev == HYUNDAI_BTN_RESUME);
     if (set || res) {
-      controls_allowed = 1;
-      controls_allowed_long = 1;
+      controls_allowed = true;
+      controls_allowed_long = true;
     }
 
     // exit controls on cancel press
     if (cruise_button == HYUNDAI_BTN_CANCEL) {
-      controls_allowed_long = 0;
+      controls_allowed_long = false;
     }
 
     cruise_button_prev = cruise_button;
