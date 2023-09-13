@@ -71,6 +71,14 @@ AddrCheckStruct hyundai_addr_checks[] = {
    HYUNDAI_SCC12_ADDR_CHECK(0)
 };
 
+AddrCheckStruct hyundai_can_canfd_addr_checks[] = {
+  {.msg = {{0x260, 1, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+           {0x371, 0, 8, .expected_timestep = 10000U}, { 0 }}},
+  {.msg = {{0x386, 1, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+  {.msg = {{0x394, 1, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+  {.msg = {{0x421, 1, 8, .max_counter = 14U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+};
+
 AddrCheckStruct hyundai_cam_scc_addr_checks[] = {
   HYUNDAI_COMMON_ADDR_CHECKS(false)
   HYUNDAI_SCC12_ADDR_CHECK(2)
@@ -385,6 +393,9 @@ static const addr_checks* hyundai_init(uint16_t param) {
     hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_long_addr_checks);
   } else if (hyundai_camera_scc) {
     hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_cam_scc_addr_checks);
+  // TODO: should just be hyundai_hda2
+  } else if (hyundai_can_canfd_hda2) {
+    hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_can_canfd_addr_checks);
   } else {
     hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_addr_checks);
   }
