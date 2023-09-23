@@ -63,42 +63,36 @@ const CanMsg HYUNDAI_CAMERA_SCC_LONG_TX_MSGS[] = {
   {0x7D0, 0, 8}, // FCA12 Bus 0
 };
 
+#define HYUNDAI_COMMON_ADDR_CHECKS(legacy)                                                                                              \
+  {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},                                       \
+           {0x371, 0, 8, .expected_timestep = 10000U}, { 0 }}},                                                                         \
+  {.msg = {{0x386, 0, 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}}, \
+  {.msg = {{0x394, 0, 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 7U, .expected_timestep = 10000U}, { 0 }, { 0 }}},  \
+
+#define HYUNDAI_SCC12_ADDR_CHECK(scc_bus)                                                                                  \
+  {.msg = {{0x421, (scc_bus), 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}}, \
+
 AddrCheckStruct hyundai_addr_checks[] = {
-  {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
-           {0x371, 0, 8, .expected_timestep = 10000U}, { 0 }}},
-  {.msg = {{0x386, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{0x394, 0, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{0x421, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+   HYUNDAI_COMMON_ADDR_CHECKS(false)
+   HYUNDAI_SCC12_ADDR_CHECK(0)
 };
-#define HYUNDAI_ADDR_CHECK_LEN (sizeof(hyundai_addr_checks) / sizeof(hyundai_addr_checks[0]))
 
 AddrCheckStruct hyundai_cam_scc_addr_checks[] = {
-  {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
-           {0x371, 0, 8, .expected_timestep = 10000U}, { 0 }}},
-  {.msg = {{0x386, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{0x394, 0, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{0x421, 2, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+  HYUNDAI_COMMON_ADDR_CHECKS(false)
+  HYUNDAI_SCC12_ADDR_CHECK(2)
 };
-#define HYUNDAI_CAM_SCC_ADDR_CHECK_LEN (sizeof(hyundai_cam_scc_addr_checks) / sizeof(hyundai_cam_scc_addr_checks[0]))
 
 AddrCheckStruct hyundai_long_addr_checks[] = {
-  {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
-           {0x371, 0, 8, .expected_timestep = 10000U}, { 0 }}},
-  {.msg = {{0x386, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{0x394, 0, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
+  HYUNDAI_COMMON_ADDR_CHECKS(false)
+  // Use CLU11 (buttons) to manage controls allowed instead of SCC cruise state
   {.msg = {{0x4F1, 0, 4, .check_checksum = false, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
 };
-#define HYUNDAI_LONG_ADDR_CHECK_LEN (sizeof(hyundai_long_addr_checks) / sizeof(hyundai_long_addr_checks[0]))
 
 // older hyundai models have less checks due to missing counters and checksums
 AddrCheckStruct hyundai_legacy_addr_checks[] = {
-  {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
-           {0x371, 0, 8, .expected_timestep = 10000U}, { 0 }}},
-  {.msg = {{0x386, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{0x394, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{0x421, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
+  HYUNDAI_COMMON_ADDR_CHECKS(true)
+  HYUNDAI_SCC12_ADDR_CHECK(0)
 };
-#define HYUNDAI_LEGACY_ADDR_CHECK_LEN (sizeof(hyundai_legacy_addr_checks) / sizeof(hyundai_legacy_addr_checks[0]))
 
 AddrCheckStruct hyundai_non_scc_addr_checks[] = {
   {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
@@ -106,7 +100,6 @@ AddrCheckStruct hyundai_non_scc_addr_checks[] = {
   {.msg = {{0x367, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
   {.msg = {{0x386, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
 };
-#define HYUNDAI_NON_SCC_ADDR_CHECK_LEN (sizeof(hyundai_non_scc_addr_checks) / sizeof(hyundai_non_scc_addr_checks[0]))
 
 const int HYUNDAI_PARAM_LFA_BTN = 256;
 const int HYUNDAI_PARAM_ESCC = 512;
@@ -117,7 +110,7 @@ bool hyundai_lfa_button = false;
 bool hyundai_escc = false;
 bool hyundai_non_scc = false;
 
-addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
+addr_checks hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_addr_checks);
 
 static uint8_t hyundai_get_counter(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
@@ -413,13 +406,13 @@ static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_non_scc = GET_FLAG(param, HYUNDAI_PARAM_NON_SCC);
 
   if (hyundai_longitudinal) {
-    hyundai_rx_checks = (addr_checks){hyundai_long_addr_checks, HYUNDAI_LONG_ADDR_CHECK_LEN};
+    hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_long_addr_checks);
   } else if (hyundai_camera_scc) {
-    hyundai_rx_checks = (addr_checks){hyundai_cam_scc_addr_checks, HYUNDAI_CAM_SCC_ADDR_CHECK_LEN};
+    hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_cam_scc_addr_checks);
   } else if (hyundai_non_scc) {
-    hyundai_rx_checks = (addr_checks){hyundai_non_scc_addr_checks, HYUNDAI_NON_SCC_ADDR_CHECK_LEN};
+    hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_non_scc_addr_checks);
   } else {
-    hyundai_rx_checks = (addr_checks){hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
+    hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_addr_checks);
   }
   return &hyundai_rx_checks;
 }
@@ -433,7 +426,8 @@ static const addr_checks* hyundai_legacy_init(uint16_t param) {
   hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
   hyundai_escc = GET_FLAG(param, HYUNDAI_PARAM_ESCC);
   hyundai_non_scc = GET_FLAG(param, HYUNDAI_PARAM_NON_SCC);
-  hyundai_rx_checks = (addr_checks){hyundai_legacy_addr_checks, HYUNDAI_LEGACY_ADDR_CHECK_LEN};
+
+  hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_legacy_addr_checks);
   return &hyundai_rx_checks;
 }
 
