@@ -53,6 +53,15 @@ const CanMsg HYUNDAI_CANFD_HDA1_TX_MSGS[] = {
   {0x1E0, 0, 16}, // LFAHDA_CLUSTER
 };
 
+const CanMsg HYUNDAI_CANFD_RADAR_LONG_TX_MSGS[] = {
+  {0x1CF, 2, 8},  // CRUISE_BUTTON
+  {0x7D0, 0, 8},  // tester present for radar ECU disable
+  {0x12A, 0, 16}, // LFA
+  {0x160, 0, 16}, // ADRV_0x160
+  {0x1E0, 0, 16}, // LFAHDA_CLUSTER
+  {0x1A0, 0, 32}, // CRUISE_INFO
+};
+
 
 // *** Addresses checked in rx hook ***
 // EV, ICE, HYBRID: ACCELERATOR (0x35), ACCELERATOR_BRAKE_ALT (0x100), ACCELERATOR_ALT (0x105)
@@ -277,16 +286,22 @@ static int hyundai_canfd_tx_hook(CANPacket_t *to_send) {
   int tx = 0;
   int addr = GET_ADDR(to_send);
 
-  if (hyundai_canfd_hda2 && !hyundai_longitudinal) {
-    if (hyundai_canfd_hda2_alt_steering) {
-      tx = msg_allowed(to_send, HYUNDAI_CANFD_HDA2_ALT_STEERING_TX_MSGS, sizeof(HYUNDAI_CANFD_HDA2_ALT_STEERING_TX_MSGS)/sizeof(HYUNDAI_CANFD_HDA2_ALT_STEERING_TX_MSGS[0]));
+  if (hyundai_canfd_hda2) {
+    if (!hyundai_longitudinal) {
+      if (hyundai_canfd_hda2_alt_steering) {
+        tx = msg_allowed(to_send, HYUNDAI_CANFD_HDA2_ALT_STEERING_TX_MSGS, sizeof(HYUNDAI_CANFD_HDA2_ALT_STEERING_TX_MSGS)/sizeof(HYUNDAI_CANFD_HDA2_ALT_STEERING_TX_MSGS[0]));
+      } else {
+        tx = msg_allowed(to_send, HYUNDAI_CANFD_HDA2_TX_MSGS, sizeof(HYUNDAI_CANFD_HDA2_TX_MSGS)/sizeof(HYUNDAI_CANFD_HDA2_TX_MSGS[0]));
+      }
     } else {
-      tx = msg_allowed(to_send, HYUNDAI_CANFD_HDA2_TX_MSGS, sizeof(HYUNDAI_CANFD_HDA2_TX_MSGS)/sizeof(HYUNDAI_CANFD_HDA2_TX_MSGS[0]));
+      tx = msg_allowed(to_send, HYUNDAI_CANFD_HDA2_LONG_TX_MSGS, sizeof(HYUNDAI_CANFD_HDA2_LONG_TX_MSGS)/sizeof(HYUNDAI_CANFD_HDA2_LONG_TX_MSGS[0]));
     }
-  } else if (hyundai_canfd_hda2 && hyundai_longitudinal) {
-    tx = msg_allowed(to_send, HYUNDAI_CANFD_HDA2_LONG_TX_MSGS, sizeof(HYUNDAI_CANFD_HDA2_LONG_TX_MSGS)/sizeof(HYUNDAI_CANFD_HDA2_LONG_TX_MSGS[0]));
   } else {
-    tx = msg_allowed(to_send, HYUNDAI_CANFD_HDA1_TX_MSGS, sizeof(HYUNDAI_CANFD_HDA1_TX_MSGS)/sizeof(HYUNDAI_CANFD_HDA1_TX_MSGS[0]));
+    if (!hyundai_camera_scc && hyundai_longitudinal) {
+      tx = msg_allowed(to_send, HYUNDAI_CANFD_RADAR_LONG_TX_MSGS, sizeof(HYUNDAI_CANFD_RADAR_LONG_TX_MSGS)/sizeof(HYUNDAI_CANFD_RADAR_LONG_TX_MSGS[0]));
+    } else {
+      tx = msg_allowed(to_send, HYUNDAI_CANFD_HDA1_TX_MSGS, sizeof(HYUNDAI_CANFD_HDA1_TX_MSGS)/sizeof(HYUNDAI_CANFD_HDA1_TX_MSGS[0]));
+    }
   }
 
   // steering
@@ -314,7 +329,7 @@ static int hyundai_canfd_tx_hook(CANPacket_t *to_send) {
   }
 
   // UDS: only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
-  if ((addr == 0x730) && hyundai_canfd_hda2) {
+  if (((addr == 0x730) && hyundai_canfd_hda2) || ((addr == 0x7D0) && !hyundai_canfd_hda2 && !hyundai_camera_scc)) {
     if ((GET_BYTES(to_send, 0, 4) != 0x00803E02U) || (GET_BYTES(to_send, 4, 4) != 0x0U)) {
       tx = 0;
     }
@@ -378,11 +393,6 @@ static const addr_checks* hyundai_canfd_init(uint16_t param) {
   gen_crc_lookup_table_16(0x1021, hyundai_canfd_crc_lut);
   hyundai_canfd_alt_buttons = GET_FLAG(param, HYUNDAI_PARAM_CANFD_ALT_BUTTONS);
   hyundai_canfd_hda2_alt_steering = GET_FLAG(param, HYUNDAI_PARAM_CANFD_HDA2_ALT_STEERING);
-
-  // no long for ICE yet
-  if (!hyundai_ev_gas_signal && !hyundai_hybrid_gas_signal) {
-    hyundai_longitudinal = false;
-  }
 
   if (hyundai_longitudinal) {
     if (hyundai_canfd_hda2) {
