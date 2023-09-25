@@ -36,7 +36,6 @@ const CanMsg HYUNDAI_CANFD_HDA2_LONG_TX_MSGS[] = {
   {0x2A4, 0, 24}, // CAM_0x2A4
   {0x51, 0, 32},  // ADRV_0x51
   {0x730, 1, 8},  // tester present for ADAS ECU disable
-  {0x7D0, 1, 8},  // tester present for radar ECU disable
   {0x12A, 1, 16}, // LFA
   {0x160, 1, 16}, // ADRV_0x160
   {0x1E0, 1, 16}, // LFAHDA_CLUSTER
@@ -307,7 +306,7 @@ static int hyundai_canfd_tx_hook(CANPacket_t *to_send) {
   }
 
   // UDS: only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
-  if (((addr == 0x730) || (addr == 0x7D0)) && hyundai_canfd_hda2) {
+  if ((addr == 0x730) && hyundai_canfd_hda2) {
     if ((GET_BYTES(to_send, 0, 4) != 0x00803E02U) || (GET_BYTES(to_send, 4, 4) != 0x0U)) {
       tx = 0;
     }
