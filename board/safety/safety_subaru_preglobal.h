@@ -26,7 +26,8 @@ const SteeringLimits SUBARU_PG_STEERING_LIMITS = {
 
 const CanMsg SUBARU_PG_TX_MSGS[] = {
   {MSG_SUBARU_PG_ES_Distance, SUBARU_PG_MAIN_BUS, 8},
-  {MSG_SUBARU_PG_ES_LKAS,     SUBARU_PG_MAIN_BUS, 8}
+  {MSG_SUBARU_PG_ES_LKAS,     SUBARU_PG_MAIN_BUS, 8},
+  {MSG_SUBARU_PG_Throttle,    SUBARU_PG_CAM_BUS,  8},
 };
 #define SUBARU_PG_TX_MSGS_LEN (sizeof(SUBARU_PG_TX_MSGS) / sizeof(SUBARU_PG_TX_MSGS[0]))
 
@@ -40,7 +41,9 @@ AddrCheckStruct subaru_preglobal_addr_checks[] = {
 addr_checks subaru_preglobal_rx_checks = {subaru_preglobal_addr_checks, SUBARU_PG_ADDR_CHECK_LEN};
 
 const uint16_t SUBARU_L_PARAM_FLIP_DRIVER_TORQUE = 1;
+const uint16_t SUBARU_L_PARAM_SNG = 1024;
 bool subaru_l_flip_driver_torque = false;
+bool subaru_l_sng = false;
 
 static int subaru_preglobal_rx_hook(CANPacket_t *to_push) {
 
@@ -108,6 +111,13 @@ static int subaru_preglobal_tx_hook(CANPacket_t *to_send) {
     }
 
   }
+
+  if (addr == MSG_SUBARU_PG_Throttle) {
+    if (!subaru_l_sng) {
+      tx = 0;
+    }
+  }
+
   return tx;
 }
 
@@ -115,7 +125,10 @@ static int subaru_preglobal_fwd_hook(int bus_num, int addr) {
   int bus_fwd = -1;
 
   if (bus_num == SUBARU_PG_MAIN_BUS) {
-    bus_fwd = SUBARU_PG_CAM_BUS;  // Camera CAN
+    bool block_msg = subaru_l_sng && (addr == MSG_SUBARU_PG_Throttle);
+    if (!block_msg) {
+      bus_fwd = SUBARU_PG_CAM_BUS;  // Camera CAN
+    }
   }
 
   if (bus_num == SUBARU_PG_CAM_BUS) {
@@ -131,6 +144,7 @@ static int subaru_preglobal_fwd_hook(int bus_num, int addr) {
 static const addr_checks* subaru_preglobal_init(uint16_t param) {
   // Checking for flip driver torque from safety parameter
   subaru_l_flip_driver_torque = GET_FLAG(param, SUBARU_L_PARAM_FLIP_DRIVER_TORQUE);
+  subaru_l_sng = GET_FLAG(param, SUBARU_L_PARAM_SNG);
   return &subaru_preglobal_rx_checks;
 }
 
