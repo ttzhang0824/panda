@@ -153,19 +153,10 @@ static uint32_t hyundai_canfd_get_checksum(CANPacket_t *to_push) {
   return chksum;
 }
 
-static uint32_t hyundai_canfd_compute_checksum(CANPacket_t *to_push) {
-  int len = GET_LEN(to_push);
-  uint32_t address = GET_ADDR(to_push);
-
-  uint16_t crc = hyundai_common_canfd_compute_checksum(to_push, len, address);
-
-  return crc;
-}
-
 static int hyundai_canfd_rx_hook(CANPacket_t *to_push) {
 
   bool valid = addr_safety_check(to_push, &hyundai_canfd_rx_checks,
-                                 hyundai_canfd_get_checksum, hyundai_canfd_compute_checksum, hyundai_canfd_get_counter, NULL);
+                                 hyundai_canfd_get_checksum, hyundai_common_canfd_compute_checksum, hyundai_canfd_get_counter, NULL);
 
   int bus = GET_BUS(to_push);
   int addr = GET_ADDR(to_push);

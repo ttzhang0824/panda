@@ -108,7 +108,7 @@ addr_checks hyundai_rx_checks = SET_ADDR_CHECKS(hyundai_addr_checks);
 static uint8_t hyundai_get_counter(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
 
-  uint8_t cnt;
+  uint8_t cnt = 0;
   if (addr == 0x260) {
     cnt = (GET_BYTE(to_push, 7) >> 4) & 0x3U;
   } else if (addr == 0x386) {
@@ -124,7 +124,6 @@ static uint8_t hyundai_get_counter(CANPacket_t *to_push) {
   } else if (addr == 0x4F1) {
     cnt = (GET_BYTE(to_push, 3) >> 4) & 0xFU;
   } else {
-    cnt = 0;
   }
   return cnt;
 }
@@ -132,7 +131,7 @@ static uint8_t hyundai_get_counter(CANPacket_t *to_push) {
 static uint32_t hyundai_get_checksum(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
 
-  uint8_t chksum;
+  uint8_t chksum = 0;
   if (addr == 0x260) {
     chksum = GET_BYTE(to_push, 7) & 0xFU;
   } else if (addr == 0x386) {
@@ -142,7 +141,6 @@ static uint32_t hyundai_get_checksum(CANPacket_t *to_push) {
   } else if (addr == 0x421) {
     chksum = hyundai_can_canfd_hda2 ? GET_BYTE(to_push, 0) : GET_BYTE(to_push, 7) >> 4;
   } else {
-    chksum = 0;
   }
   return chksum;
 }
@@ -215,7 +213,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
 
   if (valid && (bus == pt_bus)) {
     if (addr == 0x251) {
-      int torque_driver_new = ((GET_BYTES(to_push, 0, 4) & 0x7ffU) * 0.79) - 808; // scale down new driver torque signal to match previous one
+      int torque_driver_new = (GET_BYTES(to_push, 0, 2) & 0x7ffU) - 1024U;
       // update array of samples
       update_sample(&torque_driver, torque_driver_new);
     }
@@ -245,7 +243,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     }
 
     if (addr == 0x394) {
-      brake_pressed = GET_BIT(to_push, 55U) != 0U;
+      brake_pressed = ((GET_BYTE(to_push, 5) >> 5U) & 0x2U) == 0x2U;
     }
 
     const int steer_addr = hyundai_can_canfd_hda2 ? 0x50 : 0x340;
