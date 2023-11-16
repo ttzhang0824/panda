@@ -167,7 +167,7 @@ static uint32_t hyundai_compute_checksum(CANPacket_t *to_push) {
     if (hyundai_can_canfd_hda2 && (addr == 0x421)) {
       int len = GET_LEN(to_push);
       uint32_t address = GET_ADDR(to_push);
-      chksum = hyundai_common_canfd_compute_checksum(to_push, len, address);
+      chksum = hyundai_common_canfd_compute_checksum(to_push);
     } else {
       // sum of nibbles
       for (int i = 0; i < 8; i++) {
