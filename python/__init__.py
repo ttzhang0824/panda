@@ -106,24 +106,6 @@ ensure_health_packet_version = partial(ensure_version, "health", "HEALTH_PACKET_
 
 
 
-def parse_timestamp(dat):
-  a = struct.unpack("HBBBBBB", dat)
-  if a[0] == 0:
-    return None
-
-  try:
-    return datetime.datetime(a[0], a[1], a[2], a[4], a[5], a[6])
-  except ValueError:
-    return None
-
-def unpack_log(dat):
-  return {
-    'id': struct.unpack("H", dat[:2])[0],
-    'timestamp': parse_timestamp(dat[2:10]),
-    'uptime': struct.unpack("I", dat[10:14])[0],
-    'msg': bytes(dat[14:]).decode('utf-8', 'ignore').strip('\x00'),
-  }
-
 class ALTERNATIVE_EXPERIENCE:
   DEFAULT = 0
   DISABLE_DISENGAGE_ON_GAS = 1
@@ -189,7 +171,7 @@ class Panda:
   CAN_PACKET_VERSION = 4
   HEALTH_PACKET_VERSION = 14
   CAN_HEALTH_PACKET_VERSION = 5
-  HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBBHBBBHfBBHBHH")
+  HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBBHBBBHfBBHBHHB")
   CAN_HEALTH_STRUCT = struct.Struct("<BIBBBBBBBBIIIIIIIHHBBBIIII")
 
   F2_DEVICES = [HW_TYPE_PEDAL, ]
@@ -213,6 +195,9 @@ class Panda:
   FLAG_TOYOTA_ALT_BRAKE = (1 << 8)
   FLAG_TOYOTA_STOCK_LONGITUDINAL = (2 << 8)
   FLAG_TOYOTA_LTA = (4 << 8)
+
+  FLAG_TOYOTA_MADS_LTA_MSG = (64 << 8)
+  FLAG_TOYOTA_UNSUPPORTED_DSU_CAR = (128 << 8)
 
   FLAG_HONDA_ALT_BRAKE = 1
   FLAG_HONDA_BOSCH_LONG = 2
@@ -245,7 +230,7 @@ class Panda:
   FLAG_SUBARU_LONG = 2
   FLAG_SUBARU_MAX_STEER_IMPREZA_2018 = 4
 
-  FLAG_SUBARU_LEGACY_FLIP_DRIVER_TORQUE = 1
+  FLAG_SUBARU_PREGLOBAL_REVERSED_DRIVER_TORQUE = 1
 
   FLAG_SUBARU_SNG = 1024
 
@@ -256,8 +241,6 @@ class Panda:
 
   FLAG_FORD_LONG_CONTROL = 1
   FLAG_FORD_CANFD = 2
-
-  FLAG_TOYOTA_MADS_LTA_MSG = 1
 
   def __init__(self, serial: Optional[str] = None, claim: bool = True, disable_checks: bool = True):
     self._connect_serial = serial
@@ -524,6 +507,10 @@ class Panda:
       pass
 
   def flash(self, fn=None, code=None, reconnect=True):
+    if self.up_to_date(fn=fn):
+      logging.debug("flash: already up to date")
+      return
+
     if not fn:
       fn = os.path.join(FW_PATH, self._mcu_type.config.app_fn)
     assert os.path.isfile(fn)
@@ -588,9 +575,10 @@ class Panda:
       serials = Panda.list()
     return True
 
-  def up_to_date(self) -> bool:
+  def up_to_date(self, fn=None) -> bool:
     current = self.get_signature()
-    fn = os.path.join(FW_PATH, self.get_mcu_type().config.app_fn)
+    if fn is None:
+      fn = os.path.join(FW_PATH, self.get_mcu_type().config.app_fn)
     expected = Panda.get_signature_from_firmware(fn)
     return (current == expected)
 
@@ -631,6 +619,7 @@ class Panda:
       "fan_stall_count": a[24],
       "sbu1_voltage_mV": a[25],
       "sbu2_voltage_mV": a[26],
+      "som_reset_triggered": a[27],
     }
 
   @ensure_can_health_packet_version
@@ -980,7 +969,8 @@ class Panda:
 
   def get_datetime(self):
     dat = self._handle.controlRead(Panda.REQUEST_IN, 0xa0, 0, 0, 8)
-    return parse_timestamp(dat)
+    a = struct.unpack("HBBBBBB", dat)
+    return datetime.datetime(a[0], a[1], a[2], a[4], a[5], a[6])
 
   # ****************** Timer *****************
   def get_microsecond_timer(self):
@@ -1018,14 +1008,6 @@ class Panda:
   def force_relay_drive(self, intercept_relay_drive, ignition_relay_drive):
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xc5, (int(intercept_relay_drive) | int(ignition_relay_drive) << 1), 0, b'')
 
-  # ****************** Logging *****************
-  def get_logs(self, last_id=None, get_all=False):
-    assert (last_id is None) or (0 <= last_id < 0xFFFF)
-
-    logs = []
-    dat = self._handle.controlRead(Panda.REQUEST_IN, 0xfd, 1 if get_all else 0, last_id if last_id is not None else 0xFFFF, 0x40)
-    while len(dat) > 0:
-      if len(dat) == 0x40:
-        logs.append(unpack_log(dat))
-      dat = self._handle.controlRead(Panda.REQUEST_IN, 0xfd, 0, 0xFFFF, 0x40)
-    return logs
+  def read_som_gpio(self) -> bool:
+    r = self._handle.controlRead(Panda.REQUEST_IN, 0xc6, 0, 0, 1)
+    return r[0] == 1

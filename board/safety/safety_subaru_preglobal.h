@@ -40,10 +40,12 @@ AddrCheckStruct subaru_preglobal_addr_checks[] = {
 #define SUBARU_PG_ADDR_CHECK_LEN (sizeof(subaru_preglobal_addr_checks) / sizeof(subaru_preglobal_addr_checks[0]))
 addr_checks subaru_preglobal_rx_checks = {subaru_preglobal_addr_checks, SUBARU_PG_ADDR_CHECK_LEN};
 
-const uint16_t SUBARU_L_PARAM_FLIP_DRIVER_TORQUE = 1;
-const uint16_t SUBARU_L_PARAM_SNG = 1024;
-bool subaru_l_flip_driver_torque = false;
-bool subaru_l_sng = false;
+
+const int SUBARU_PG_PARAM_REVERSED_DRIVER_TORQUE = 1;
+const uint16_t SUBARU_PG_PARAM_SNG = 1024;
+bool subaru_pg_reversed_driver_torque = false;
+bool subaru_pg_sng = false;
+
 
 static int subaru_preglobal_rx_hook(CANPacket_t *to_push) {
 
@@ -57,9 +59,7 @@ static int subaru_preglobal_rx_hook(CANPacket_t *to_push) {
       int torque_driver_new;
       torque_driver_new = (GET_BYTE(to_push, 3) >> 5) + (GET_BYTE(to_push, 4) << 3);
       torque_driver_new = to_signed(torque_driver_new, 11);
-      if (subaru_l_flip_driver_torque) {
-        torque_driver_new = -1 * torque_driver_new;
-      }
+      torque_driver_new = subaru_pg_reversed_driver_torque ? -torque_driver_new : torque_driver_new;
       update_sample(&torque_driver, torque_driver_new);
     }
 
@@ -113,7 +113,7 @@ static int subaru_preglobal_tx_hook(CANPacket_t *to_send) {
   }
 
   if (addr == MSG_SUBARU_PG_Throttle) {
-    if (!subaru_l_sng) {
+    if (!subaru_pg_sng) {
       tx = 0;
     }
   }
@@ -125,7 +125,7 @@ static int subaru_preglobal_fwd_hook(int bus_num, int addr) {
   int bus_fwd = -1;
 
   if (bus_num == SUBARU_PG_MAIN_BUS) {
-    bool block_msg = subaru_l_sng && (addr == MSG_SUBARU_PG_Throttle);
+    bool block_msg = subaru_pg_sng && (addr == MSG_SUBARU_PG_Throttle);
     if (!block_msg) {
       bus_fwd = SUBARU_PG_CAM_BUS;  // Camera CAN
     }
@@ -142,9 +142,8 @@ static int subaru_preglobal_fwd_hook(int bus_num, int addr) {
 }
 
 static const addr_checks* subaru_preglobal_init(uint16_t param) {
-  // Checking for flip driver torque from safety parameter
-  subaru_l_flip_driver_torque = GET_FLAG(param, SUBARU_L_PARAM_FLIP_DRIVER_TORQUE);
-  subaru_l_sng = GET_FLAG(param, SUBARU_L_PARAM_SNG);
+  subaru_pg_reversed_driver_torque = GET_FLAG(param, SUBARU_PG_PARAM_REVERSED_DRIVER_TORQUE);
+  subaru_pg_sng = GET_FLAG(param, SUBARU_PG_PARAM_SNG);
   return &subaru_preglobal_rx_checks;
 }
 

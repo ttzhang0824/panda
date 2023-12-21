@@ -40,10 +40,6 @@ AddrCheckStruct toyota_addr_checks[] = {
            {0x226, 0, 8, .check_checksum = false, .expected_timestep = 25000U}, { 0 }}},
 };
 
-const int TOYOTA_PARAM_MADS_LTA_MSG = 1;
-
-bool toyota_mads_lta_msg = false;
-
 #define TOYOTA_ADDR_CHECKS_LEN (sizeof(toyota_addr_checks) / sizeof(toyota_addr_checks[0]))
 addr_checks toyota_rx_checks = {toyota_addr_checks, TOYOTA_ADDR_CHECKS_LEN};
 
@@ -55,10 +51,16 @@ const uint32_t TOYOTA_PARAM_ALT_BRAKE = 1U << TOYOTA_PARAM_OFFSET;
 const uint32_t TOYOTA_PARAM_STOCK_LONGITUDINAL = 2U << TOYOTA_PARAM_OFFSET;
 const uint32_t TOYOTA_PARAM_LTA = 4U << TOYOTA_PARAM_OFFSET;
 
+const uint32_t TOYOTA_PARAM_MADS_LTA_MSG = 64U << TOYOTA_PARAM_OFFSET;
+const uint32_t TOYOTA_PARAM_UNSUPPORTED_DSU_CAR = 128U << TOYOTA_PARAM_OFFSET;
+
 bool toyota_alt_brake = false;
 bool toyota_stock_longitudinal = false;
 bool toyota_lta = false;
 int toyota_dbc_eps_torque_factor = 100;   // conversion factor for STEER_TORQUE_EPS in %: see dbc file
+
+bool toyota_mads_lta_msg = false;
+bool toyota_unsupported_dsu_car = false;
 
 static uint32_t toyota_compute_checksum(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
@@ -125,6 +127,11 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
 
     if (addr == 0x1D3) {
       acc_main_on = GET_BIT(to_push, 15U) != 0U;
+      mads_acc_main_check(acc_main_on);
+    }
+
+    if (addr == 0x365 && toyota_unsupported_dsu_car) {
+      acc_main_on = GET_BIT(to_push, 0U) != 0U;
       mads_acc_main_check(acc_main_on);
     }
 
@@ -243,7 +250,6 @@ static int toyota_tx_hook(CANPacket_t *to_send) {
 }
 
 static const addr_checks* toyota_init(uint16_t param) {
-  gas_interceptor_detected = 0;
   toyota_alt_brake = GET_FLAG(param, TOYOTA_PARAM_ALT_BRAKE);
   toyota_stock_longitudinal = GET_FLAG(param, TOYOTA_PARAM_STOCK_LONGITUDINAL);
   toyota_dbc_eps_torque_factor = param & TOYOTA_EPS_FACTOR;
@@ -254,6 +260,7 @@ static const addr_checks* toyota_init(uint16_t param) {
   toyota_lta = false;
 #endif
   toyota_mads_lta_msg = GET_FLAG(param, TOYOTA_PARAM_MADS_LTA_MSG);
+  toyota_unsupported_dsu_car = GET_FLAG(param, TOYOTA_PARAM_UNSUPPORTED_DSU_CAR);
   return &toyota_rx_checks;
 }
 
