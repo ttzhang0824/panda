@@ -58,8 +58,8 @@ static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   if (bus_num == 0) {
     uint32_t ts = TIM2->CNT;
     uint32_t ts_elapsed = get_ts_elapsed(ts, sunnypilot_detected_last);
-    // Stop blocking if we stop receiving messages from sunnypilot/openpilot after 750000
-    if (ts_elapsed > 750000) {
+    // Stop blocking if we stop receiving messages from sunnypilot/openpilot after 350000
+    if (ts_elapsed > 350000) {
       block = 0;
     }
     // ESCC is receiving messages from sunnypilot/openpilot
