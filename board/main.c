@@ -120,7 +120,7 @@ void escc_id(uint8_t fca_cmd_act, uint8_t aeb_cmd_act, uint8_t cf_vsm_warn_fca11
   CAN1->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
   CAN1->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
   CAN1->sTxMailBox[0].TDTR = 8;
-  CAN1->sTxMailBox[0].TIR = (0x2ABU << 21) | 1U;
+  CAN1->sTxMailBox[0].TIR = (0x2BBU << 21) | 1U;
 }
 
 // ****************************** safety mode ******************************
@@ -789,6 +789,8 @@ void TIM1_BRK_TIM9_IRQ_Handler(void) {
 int main(void) {
   // Init interrupt table
   init_interrupts(true);
+
+  REGISTER_INTERRUPT(CAN1_RX0_IRQn, CAN1_RX0_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
 
   // 8Hz timer
   REGISTER_INTERRUPT(TIM1_BRK_TIM9_IRQn, TIM1_BRK_TIM9_IRQ_Handler, 10U, FAULT_INTERRUPT_RATE_TIM9)
