@@ -44,6 +44,9 @@ uint32_t ignition_can_cnt = 0U;
 
 int can_live = 0, pending_can_live = 0, can_loopback = 0, can_silent = ALL_CAN_SILENT;
 
+#define CAN_ESCC_INPUT  0x2AC
+#define CAN_ESCC_OUTPUT 0x2ABU
+
 // ********************* instantiate queues *********************
 
 #define can_buffer(x, size) \
@@ -403,6 +406,21 @@ void can_rx(uint8_t can_number) {
       to_send.RDTR = to_push.RDTR;
       to_send.RDLR = to_push.RDLR;
       to_send.RDHR = to_push.RDHR;
+      int addr = GET_ADDR(&to_send);
+      if (addr == CAN_ESCC_INPUT) {
+        // softloader entry
+        if (GET_BYTES_04(&CAN->sFIFOMailBox[0]) == 0xdeadface) {
+          if (GET_BYTES_48(&CAN->sFIFOMailBox[0]) == 0x0ab00b1e) {
+            enter_bootloader_mode = ENTER_SOFTLOADER_MAGIC;
+            NVIC_SystemReset();
+          } else if (GET_BYTES_48(&CAN->sFIFOMailBox[0]) == 0x02b00b1e) {
+            enter_bootloader_mode = ENTER_BOOTLOADER_MAGIC;
+            NVIC_SystemReset();
+          } else {
+            puts("Failed entering Softloader or Bootloader\n");
+          }
+        }
+      }
       can_send(&to_send, bus_fwd_num, true);
     }
 

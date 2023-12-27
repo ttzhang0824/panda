@@ -1,4 +1,4 @@
-PROJ_NAME = panda
+PROJ_NAME = escc
 CFLAGS = -g -Wall -Wextra -Wstrict-prototypes -Werror
 
 CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4

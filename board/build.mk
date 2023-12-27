@@ -32,6 +32,9 @@ $(shell mkdir -p -m 777 $(DEPDIR) >/dev/null)
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
 POSTCOMPILE = @mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
 
+canflash: obj/$(PROJ_NAME).bin
+	../tests/escc/enter_canloader.py $<
+
 # this no longer pushes the bootstub
 flash: obj/$(PROJ_NAME).bin
 	PYTHONPATH=../ python3 -c "from python import Panda; Panda().flash('obj/$(PROJ_NAME).bin')"
@@ -43,8 +46,7 @@ bin: obj/$(PROJ_NAME).bin
 
 # this flashes everything
 recover: obj/bootstub.$(PROJ_NAME).bin obj/$(PROJ_NAME).bin
-	-PYTHONPATH=../ python3 -c "from python import Panda; Panda().reset(enter_bootstub=True); Panda().reset(enter_bootloader=True)"
-	sleep 1.0
+	../tests/escc/enter_canloader.py --recover; sleep 0.5
 	$(DFU_UTIL) -d 0483:df11 -a 0 -s 0x08004000 -D obj/$(PROJ_NAME).bin
 	$(DFU_UTIL) -d 0483:df11 -a 0 -s 0x08000000:leave -D obj/bootstub.$(PROJ_NAME).bin
 
