@@ -418,30 +418,7 @@ void can_rx(uint8_t can_number) {
 }
 
 void CAN1_TX_IRQ_Handler(void) { process_can(0); }
-void CAN1_RX0_IRQ_Handler(void) {
-  while ((CAN1->RF0R & CAN_RF0R_FMP0) != 0) {
-    #ifdef DEBUG
-      puts("CAN1 RX\n");
-    #endif
-    int address = CAN1->sFIFOMailBox[0].RIR >> 21;
-    if (address == 0x2BA) {
-      // softloader entry
-      if (GET_BYTES_04(&CAN1->sFIFOMailBox[0]) == 0xdeadface) {
-        if (GET_BYTES_48(&CAN1->sFIFOMailBox[0]) == 0x0ab00b1e) {
-          enter_bootloader_mode = ENTER_SOFTLOADER_MAGIC;
-          NVIC_SystemReset();
-        } else if (GET_BYTES_48(&CAN1->sFIFOMailBox[0]) == 0x02b00b1e) {
-          enter_bootloader_mode = ENTER_BOOTLOADER_MAGIC;
-          NVIC_SystemReset();
-        } else {
-          puts("Failed entering Softloader or Bootloader\n");
-        }
-      }
-    }
-    // next
-    CAN1->RF0R |= CAN_RF0R_RFOM0;
-  }
-}
+void CAN1_RX0_IRQ_Handler(void) { can_rx(0); }
 void CAN1_SCE_IRQ_Handler(void) { can_sce(CAN1); }
 
 void CAN2_TX_IRQ_Handler(void) { process_can(1); }
