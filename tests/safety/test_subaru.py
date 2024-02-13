@@ -4,7 +4,7 @@ import unittest
 from panda import Panda
 from panda.tests.libpanda import libpanda_py
 import panda.tests.safety.common as common
-from panda.tests.safety.common import CANPackerPanda, MeasurementSafetyTest
+from panda.tests.safety.common import CANPackerPanda
 from functools import partial
 
 class SubaruMsg(enum.IntEnum):
@@ -52,11 +52,10 @@ def gen2_long_additional_tx_msgs():
 def fwd_blacklisted_addr(lkas_msg=SubaruMsg.ES_LKAS):
   return {SUBARU_CAM_BUS: [lkas_msg, SubaruMsg.ES_DashStatus, SubaruMsg.ES_LKAS_State, SubaruMsg.ES_Infotainment]}
 
-class TestSubaruSafetyBase(common.PandaSafetyTest, MeasurementSafetyTest):
+class TestSubaruSafetyBase(common.PandaCarSafetyTest):
   FLAGS = 0
   STANDSTILL_THRESHOLD = 0 # kph
-  RELAY_MALFUNCTION_ADDR = SubaruMsg.ES_LKAS
-  RELAY_MALFUNCTION_BUS = SUBARU_MAIN_BUS
+  RELAY_MALFUNCTION_ADDRS = {SUBARU_MAIN_BUS: (SubaruMsg.ES_LKAS,)}
   FWD_BUS_LOOKUP = {SUBARU_MAIN_BUS: SUBARU_CAM_BUS, SUBARU_CAM_BUS: SUBARU_MAIN_BUS}
   FWD_BLACKLISTED_ADDRS = fwd_blacklisted_addr()
 
@@ -69,7 +68,7 @@ class TestSubaruSafetyBase(common.PandaSafetyTest, MeasurementSafetyTest):
   ALT_MAIN_BUS = SUBARU_MAIN_BUS
   ALT_CAM_BUS = SUBARU_CAM_BUS
 
-  DEG_TO_CAN = -100
+  DEG_TO_CAN = 100
 
   INACTIVE_GAS = 1818
 
@@ -83,7 +82,6 @@ class TestSubaruSafetyBase(common.PandaSafetyTest, MeasurementSafetyTest):
     self.safety.set_desired_torque_last(t)
     self.safety.set_rt_torque_last(t)
 
-  # TODO: this is unused
   def _torque_driver_msg(self, torque):
     values = {"Steer_Torque_Sensor": torque}
     return self.packer.make_can_msg_panda("Steering_Torque", 0, values)
@@ -124,7 +122,7 @@ class TestSubaruLongitudinalSafetyBase(TestSubaruSafetyBase, common.Longitudinal
   MIN_GAS = 808
   MAX_GAS = 3400
   INACTIVE_GAS = 1818
-  MAX_POSSIBLE_GAS = 2**12
+  MAX_POSSIBLE_GAS = 2**13
 
   MIN_BRAKE = 0
   MAX_BRAKE = 600
@@ -132,7 +130,7 @@ class TestSubaruLongitudinalSafetyBase(TestSubaruSafetyBase, common.Longitudinal
 
   MIN_RPM = 0
   MAX_RPM = 2400
-  MAX_POSSIBLE_RPM = 2**12
+  MAX_POSSIBLE_RPM = 2**13
 
   FWD_BLACKLISTED_ADDRS = {2: [SubaruMsg.ES_LKAS, SubaruMsg.ES_Brake, SubaruMsg.ES_Distance,
                                SubaruMsg.ES_Status, SubaruMsg.ES_DashStatus,

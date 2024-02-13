@@ -95,7 +95,7 @@ bool can_pop(can_ring *q, CANPacket_t *elem) {
   return ret;
 }
 
-bool can_push(can_ring *q, CANPacket_t *elem) {
+bool can_push(can_ring *q, const CANPacket_t *elem) {
   bool ret = false;
   uint32_t next_w_ptr;
 
@@ -133,7 +133,7 @@ bool can_push(can_ring *q, CANPacket_t *elem) {
   return ret;
 }
 
-uint32_t can_slots_empty(can_ring *q) {
+uint32_t can_slots_empty(const can_ring *q) {
   uint32_t ret = 0;
 
   ENTER_CRITICAL();
@@ -238,7 +238,7 @@ bool can_tx_check_min_slots_free(uint32_t min) {
     (can_slots_empty(&can_txgmlan_q) >= min);
 }
 
-uint8_t calculate_checksum(uint8_t *dat, uint32_t len) {
+uint8_t calculate_checksum(const uint8_t *dat, uint32_t len) {
   uint8_t checksum = 0U;
   for (uint32_t i = 0U; i < len; i++) {
     checksum ^= dat[i];
@@ -257,26 +257,13 @@ bool can_check_checksum(CANPacket_t *packet) {
 
 void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook) {
   if (skip_tx_hook || safety_tx_hook(to_push) != 0) {
-    uint8_t busnum1 = (bus_number & 0xF);
-    if (busnum1 < PANDA_BUS_CNT) {
+    if (bus_number < PANDA_BUS_CNT) {
       // add CAN packet to send queue
-      if ((busnum1 == 3U) && (bus_config[3].can_num_lookup == 0xFFU)) {
+      if ((bus_number == 3U) && (bus_config[3].can_num_lookup == 0xFFU)) {
         gmlan_send_errs += bitbang_gmlan(to_push) ? 0U : 1U;
       } else {
-        tx_buffer_overflow += can_push(can_queues[busnum1], to_push) ? 0U : 1U;
-        process_can(CAN_NUM_FROM_BUS_NUM(busnum1));
-      }
-    }
-    if (bus_number > 0xF){
-      uint8_t busnum2 = ((bus_number >> 4) & 0x0F);
-      if (busnum2 < PANDA_BUS_CNT) {
-        // add CAN packet to send queue
-        if ((busnum2 == 3U) && (bus_config[3].can_num_lookup == 0xFFU)) {
-          gmlan_send_errs += bitbang_gmlan(to_push) ? 0U : 1U;
-        } else {
-          tx_buffer_overflow += can_push(can_queues[busnum2], to_push) ? 0U : 1U;
-          process_can(CAN_NUM_FROM_BUS_NUM(busnum2));
-        }
+        tx_buffer_overflow += can_push(can_queues[bus_number], to_push) ? 0U : 1U;
+        process_can(CAN_NUM_FROM_BUS_NUM(bus_number));
       }
     }
   } else {
