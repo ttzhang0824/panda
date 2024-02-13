@@ -29,7 +29,7 @@ int get_jungle_health_pkt(void *dat) {
 }
 
 // send on serial, first byte to select the ring
-void comms_endpoint2_write(uint8_t *data, uint32_t len) {
+void comms_endpoint2_write(const uint8_t *data, uint32_t len) {
   UNUSED(data);
   UNUSED(len);
 }
@@ -57,6 +57,10 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
     // **** 0xa2: Set ignition.
     case 0xa2:
       current_board->set_ignition((req->param1 == 1U));
+      break;
+    // **** 0xa0: Set panda power per channel by bitmask.
+    case 0xa3:
+      current_board->set_panda_individual_power(req->param1, (req->param2 > 0U));
       break;
     // **** 0xa8: get microsecond timer
     case 0xa8:
@@ -188,7 +192,7 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
     // **** 0xe0: debug read
     case 0xe0:
       // read
-      while ((resp_len < MIN(req->length, USBPACKET_MAX_SIZE)) && getc(get_ring_by_number(0), (char*)&resp[resp_len])) {
+      while ((resp_len < MIN(req->length, USBPACKET_MAX_SIZE)) && get_char(get_ring_by_number(0), (char*)&resp[resp_len])) {
         ++resp_len;
       }
       break;

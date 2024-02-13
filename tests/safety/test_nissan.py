@@ -6,13 +6,12 @@ import panda.tests.safety.common as common
 from panda.tests.safety.common import CANPackerPanda
 
 
-class TestNissanSafety(common.PandaSafetyTest, common.AngleSteeringSafetyTest):
+class TestNissanSafety(common.PandaCarSafetyTest, common.AngleSteeringSafetyTest):
 
   TX_MSGS = [[0x169, 0], [0x2b1, 0], [0x4cc, 0], [0x20b, 2], [0x280, 2]]
   STANDSTILL_THRESHOLD = 0
   GAS_PRESSED_THRESHOLD = 3
-  RELAY_MALFUNCTION_ADDR = 0x169
-  RELAY_MALFUNCTION_BUS = 0
+  RELAY_MALFUNCTION_ADDRS = {0: (0x169,)}
   FWD_BLACKLISTED_ADDRS = {0: [0x280], 2: [0x169, 0x2b1, 0x4cc]}
   FWD_BUS_LOOKUP = {0: 2, 2: 0}
 
@@ -20,7 +19,7 @@ class TestNissanSafety(common.PandaSafetyTest, common.AngleSteeringSafetyTest):
   CRUISE_BUS = 2
 
   # Angle control limits
-  DEG_TO_CAN = -100
+  DEG_TO_CAN = 100
 
   ANGLE_RATE_BP = [0., 5., 15.]
   ANGLE_RATE_UP = [5., .8, .15]  # windup limit
@@ -45,13 +44,12 @@ class TestNissanSafety(common.PandaSafetyTest, common.AngleSteeringSafetyTest):
     return self.packer.make_can_msg_panda("CRUISE_STATE", self.CRUISE_BUS, values)
 
   def _speed_msg(self, speed):
-    # TODO: why the 3.6? m/s to kph? not in dbc
     values = {"WHEEL_SPEED_%s" % s: speed * 3.6 for s in ["RR", "RL"]}
     return self.packer.make_can_msg_panda("WHEEL_SPEEDS_REAR", self.EPS_BUS, values)
 
   def _user_brake_msg(self, brake):
     values = {"USER_BRAKE_PRESSED": brake}
-    return self.packer.make_can_msg_panda("DOORS_LIGHTS", 1, values)
+    return self.packer.make_can_msg_panda("DOORS_LIGHTS", self.EPS_BUS, values)
 
   def _user_gas_msg(self, gas):
     values = {"GAS_PEDAL": gas}
