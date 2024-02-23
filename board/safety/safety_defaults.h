@@ -34,8 +34,9 @@ const uint16_t ALLOUTPUT_PARAM_PASSTHROUGH = 1;
 bool alloutput_passthrough = false;
 
 static safety_config alloutput_init(uint16_t param) {
+  UNUSED(param);
   controls_allowed = true;
-  alloutput_passthrough = GET_FLAG(param, ALLOUTPUT_PARAM_PASSTHROUGH);
+  alloutput_passthrough = true;
   return (safety_config){NULL, 0, NULL, 0};
 }
 

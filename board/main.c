@@ -218,7 +218,7 @@ void tick_handler(void) {
         heartbeat_engaged_mismatches = 0U;
       }
 
-      if (!heartbeat_disabled) {
+      if (false) {
         // if the heartbeat has been gone for a while, go to SILENT safety mode and enter power save
         if (heartbeat_counter >= (check_started() ? HEARTBEAT_IGNITION_CNT_ON : HEARTBEAT_IGNITION_CNT_OFF)) {
           print("device hasn't sent a heartbeat for 0x");
@@ -352,8 +352,8 @@ int main(void) {
 
   microsecond_timer_init();
 
-  // init to SILENT and can silent
-  set_safety_mode(SAFETY_SILENT, 0U);
+  // init to ALLOUTPUT and can all output
+  set_safety_mode(SAFETY_ALLOUTPUT, 0U);
 
   // enable CAN TXs
   current_board->enable_can_transceivers(true);
