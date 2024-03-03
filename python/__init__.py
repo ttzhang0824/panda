@@ -9,7 +9,6 @@ import binascii
 import datetime
 import logging
 from functools import wraps, partial
-from typing import Optional
 from itertools import accumulate
 
 from .base import BaseHandle
@@ -28,6 +27,7 @@ logging.basicConfig(level=LOGLEVEL, format='%(message)s')
 CANPACKET_HEAD_SIZE = 0x6
 DLC_TO_LEN = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64]
 LEN_TO_DLC = {length: dlc for (dlc, length) in enumerate(DLC_TO_LEN)}
+PANDA_BUS_CNT = 4
 
 
 def calculate_checksum(data):
@@ -111,6 +111,7 @@ class ALTERNATIVE_EXPERIENCE:
   DISABLE_DISENGAGE_ON_GAS = 1
   DISABLE_STOCK_AEB = 2
   RAISE_LONGITUDINAL_LIMITS_TO_ISO_MAX = 8
+  ALLOW_AEB = 16
 
 class Panda:
 
@@ -165,24 +166,25 @@ class Panda:
   HW_TYPE_RED_PANDA = b'\x07'
   HW_TYPE_RED_PANDA_V2 = b'\x08'
   HW_TYPE_TRES = b'\x09'
+  HW_TYPE_CUATRO = b'\x0a'
 
   CAN_PACKET_VERSION = 4
-  HEALTH_PACKET_VERSION = 14
+  HEALTH_PACKET_VERSION = 15
   CAN_HEALTH_PACKET_VERSION = 5
-  HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBBHBBBHfBBHBHHB")
+  HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBHBBBHfBBHBHHB")
   CAN_HEALTH_STRUCT = struct.Struct("<BIBBBBBBBBIIIIIIIHHBBBIIII")
 
-  F2_DEVICES = [HW_TYPE_PEDAL, ]
   F4_DEVICES = [HW_TYPE_WHITE_PANDA, HW_TYPE_GREY_PANDA, HW_TYPE_BLACK_PANDA, HW_TYPE_UNO, HW_TYPE_DOS]
-  H7_DEVICES = [HW_TYPE_RED_PANDA, HW_TYPE_RED_PANDA_V2, HW_TYPE_TRES]
+  H7_DEVICES = [HW_TYPE_RED_PANDA, HW_TYPE_RED_PANDA_V2, HW_TYPE_TRES, HW_TYPE_CUATRO]
 
-  INTERNAL_DEVICES = (HW_TYPE_UNO, HW_TYPE_DOS, HW_TYPE_TRES)
-  HAS_OBD = (HW_TYPE_BLACK_PANDA, HW_TYPE_UNO, HW_TYPE_DOS, HW_TYPE_RED_PANDA, HW_TYPE_RED_PANDA_V2, HW_TYPE_TRES)
+  INTERNAL_DEVICES = (HW_TYPE_UNO, HW_TYPE_DOS, HW_TYPE_TRES, HW_TYPE_CUATRO)
+  HAS_OBD = (HW_TYPE_BLACK_PANDA, HW_TYPE_UNO, HW_TYPE_DOS, HW_TYPE_RED_PANDA, HW_TYPE_RED_PANDA_V2, HW_TYPE_TRES, HW_TYPE_CUATRO)
 
   MAX_FAN_RPMs = {
     HW_TYPE_UNO: 5100,
     HW_TYPE_DOS: 6500,
     HW_TYPE_TRES: 6600,
+    HW_TYPE_CUATRO: 6600,
   }
 
   HARNESS_STATUS_NC = 0
@@ -193,11 +195,13 @@ class Panda:
   FLAG_TOYOTA_ALT_BRAKE = (1 << 8)
   FLAG_TOYOTA_STOCK_LONGITUDINAL = (2 << 8)
   FLAG_TOYOTA_LTA = (4 << 8)
+  FLAG_TOYOTA_GAS_INTERCEPTOR = (8 << 8)
 
   FLAG_HONDA_ALT_BRAKE = 1
   FLAG_HONDA_BOSCH_LONG = 2
   FLAG_HONDA_NIDEC_ALT = 4
   FLAG_HONDA_RADARLESS = 8
+  FLAG_HONDA_GAS_INTERCEPTOR = 16
 
   FLAG_HYUNDAI_EV_GAS = 1
   FLAG_HYUNDAI_HYBRID_GAS = 2
@@ -230,19 +234,17 @@ class Panda:
   FLAG_FORD_LONG_CONTROL = 1
   FLAG_FORD_CANFD = 2
 
-  def __init__(self, serial: Optional[str] = None, claim: bool = True, disable_checks: bool = True):
+  def __init__(self, serial: str | None = None, claim: bool = True, disable_checks: bool = True, can_speed_kbps: int = 500):
     self._connect_serial = serial
     self._disable_checks = disable_checks
 
     self._handle: BaseHandle
     self._handle_open = False
     self.can_rx_overflow_buffer = b''
+    self._can_speed_kbps = can_speed_kbps
 
     # connect and set mcu type
     self.connect(claim)
-
-    # reset comms
-    self.can_reset_communications()
 
   def __enter__(self):
     return self
@@ -300,6 +302,13 @@ class Panda:
     if self._disable_checks:
       self.set_heartbeat_disabled()
       self.set_power_save(0)
+
+    # reset comms
+    self.can_reset_communications()
+
+    # set CAN speed
+    for bus in range(PANDA_BUS_CNT):
+      self.set_can_speed_kbps(bus, self._can_speed_kbps)
 
   @classmethod
   def spi_connect(cls, serial, ignore_version=False):
@@ -386,7 +395,7 @@ class Panda:
     return context, usb_handle, usb_serial, bootstub, bcd
 
   @classmethod
-  def list(cls): # noqa: A003
+  def list(cls):
     ret = cls.usb_list()
     ret += cls.spi_list()
     return list(set(ret))
@@ -400,7 +409,7 @@ class Panda:
           if device.getVendorID() == 0xbbaa and device.getProductID() in cls.USB_PIDS:
             try:
               serial = device.getSerialNumber()
-              if len(serial) == 24 or serial == "pedal":
+              if len(serial) == 24:
                 ret.append(serial)
               else:
                 logging.warning(f"found device with panda descriptors but invalid serial: {serial}", RuntimeWarning)
@@ -521,7 +530,7 @@ class Panda:
     if reconnect:
       self.reconnect()
 
-  def recover(self, timeout: Optional[int] = 60, reset: bool = True) -> bool:
+  def recover(self, timeout: int | None = 60, reset: bool = True) -> bool:
     dfu_serial = self.get_dfu_serial()
 
     if reset:
@@ -540,7 +549,7 @@ class Panda:
     return True
 
   @staticmethod
-  def wait_for_dfu(dfu_serial: Optional[str], timeout: Optional[int] = None) -> bool:
+  def wait_for_dfu(dfu_serial: str | None, timeout: int | None = None) -> bool:
     t_start = time.monotonic()
     dfu_list = PandaDFU.list()
     while (dfu_serial is None and len(dfu_list) == 0) or (dfu_serial is not None and dfu_serial not in dfu_list):
@@ -552,7 +561,7 @@ class Panda:
     return True
 
   @staticmethod
-  def wait_for_panda(serial: Optional[str], timeout: int) -> bool:
+  def wait_for_panda(serial: str | None, timeout: int) -> bool:
     t_start = time.monotonic()
     serials = Panda.list()
     while (serial is None and len(serials) == 0) or (serial is not None and serial not in serials):
@@ -592,22 +601,21 @@ class Panda:
       "ignition_line": a[9],
       "ignition_can": a[10],
       "controls_allowed": a[11],
-      "gas_interceptor_detected": a[12],
-      "car_harness_status": a[13],
-      "safety_mode": a[14],
-      "safety_param": a[15],
-      "fault_status": a[16],
-      "power_save_enabled": a[17],
-      "heartbeat_lost": a[18],
-      "alternative_experience": a[19],
-      "interrupt_load": a[20],
-      "fan_power": a[21],
-      "safety_rx_checks_invalid": a[22],
-      "spi_checksum_error_count": a[23],
-      "fan_stall_count": a[24],
-      "sbu1_voltage_mV": a[25],
-      "sbu2_voltage_mV": a[26],
-      "som_reset_triggered": a[27],
+      "car_harness_status": a[12],
+      "safety_mode": a[13],
+      "safety_param": a[14],
+      "fault_status": a[15],
+      "power_save_enabled": a[16],
+      "heartbeat_lost": a[17],
+      "alternative_experience": a[18],
+      "interrupt_load": a[19],
+      "fan_power": a[20],
+      "safety_rx_checks_invalid": a[21],
+      "spi_checksum_error_count": a[22],
+      "fan_stall_count": a[23],
+      "sbu1_voltage_mV": a[24],
+      "sbu2_voltage_mV": a[25],
+      "som_reset_triggered": a[26],
     }
 
   @ensure_can_health_packet_version
@@ -689,9 +697,7 @@ class Panda:
 
   def get_mcu_type(self) -> McuType:
     hw_type = self.get_type()
-    if hw_type in Panda.F2_DEVICES:
-      return McuType.F2
-    elif hw_type in Panda.F4_DEVICES:
+    if hw_type in Panda.F4_DEVICES:
       return McuType.F4
     elif hw_type in Panda.H7_DEVICES:
       return McuType.H7
@@ -880,63 +886,6 @@ class Panda:
     """
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xf2, port_number, 0, b'')
 
-  # ******************* kline *******************
-
-  # pulse low for wakeup
-  def kline_wakeup(self, k=True, l=True):
-    assert k or l, "must specify k-line, l-line, or both"
-    logging.debug("kline wakeup...")
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xf0, 2 if k and l else int(l), 0, b'')
-    logging.debug("kline wakeup done")
-
-  def kline_5baud(self, addr, k=True, l=True):
-    assert k or l, "must specify k-line, l-line, or both"
-    logging.debug("kline 5 baud...")
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xf4, 2 if k and l else int(l), addr, b'')
-    logging.debug("kline 5 baud done")
-
-  def kline_drain(self, bus=2):
-    # drain buffer
-    bret = bytearray()
-    while True:
-      ret = self._handle.controlRead(Panda.REQUEST_IN, 0xe0, bus, 0, 0x40)
-      if len(ret) == 0:
-        break
-      logging.debug(f"kline drain: 0x{ret.hex()}")
-      bret += ret
-    return bytes(bret)
-
-  def kline_ll_recv(self, cnt, bus=2):
-    echo = bytearray()
-    while len(echo) != cnt:
-      ret = self._handle.controlRead(Panda.REQUEST_OUT, 0xe0, bus, 0, cnt - len(echo))
-      if len(ret) > 0:
-        logging.debug(f"kline recv: 0x{ret.hex()}")
-      echo += ret
-    return bytes(echo)
-
-  def kline_send(self, x, bus=2, checksum=True):
-    self.kline_drain(bus=bus)
-    if checksum:
-      x += bytes([sum(x) % 0x100])
-    for i in range(0, len(x), 0xf):
-      ts = x[i:i + 0xf]
-      logging.debug(f"kline send: 0x{ts.hex()}")
-      self._handle.bulkWrite(2, bytes([bus]) + ts)
-      echo = self.kline_ll_recv(len(ts), bus=bus)
-      if echo != ts:
-        logging.error(f"**** ECHO ERROR {i} ****")
-        logging.error(f"0x{echo.hex()}")
-        logging.error(f"0x{ts.hex()}")
-    assert echo == ts
-
-  def kline_recv(self, bus=2, header_len=4):
-    # read header (last byte is length)
-    msg = self.kline_ll_recv(header_len, bus=bus)
-    # read data (add one byte to length for checksum)
-    msg += self.kline_ll_recv(msg[-1]+1, bus=bus)
-    return msg
-
   def send_heartbeat(self, engaged=True):
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xf3, engaged, 0, b'')
 
@@ -977,10 +926,6 @@ class Panda:
     dat = self._handle.controlRead(Panda.REQUEST_IN, 0xb2, 0, 0, 2)
     a = struct.unpack("H", dat)
     return a[0]
-
-  # ****************** Phone *****************
-  def set_phone_power(self, enabled):
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xb3, int(enabled), 0, b'')
 
   # ****************** Siren *****************
   def set_siren(self, enabled):
