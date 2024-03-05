@@ -127,6 +127,22 @@ bool is_car_safety_mode(uint16_t mode) {
          (mode != SAFETY_ELM327);
 }
 
+#ifdef CANFD
+void escc_id(void) {
+  uint32_t TxFIFOSA = FDCAN_START_ADDRESS + (0 * FDCAN_OFFSET) + (FDCAN_RX_FIFO_0_EL_CNT * FDCAN_RX_FIFO_0_EL_SIZE);
+  uint32_t tx_index = (FDCAN1->TXFQS >> FDCAN_TXFQS_TFQPI_Pos) & 0x1F;
+  canfd_fifo *fifo;
+  fifo = (canfd_fifo *)(canfd_fifo *)(TxFIFOSA + (tx_index * FDCAN_TX_FIFO_EL_SIZE));
+  uint8_t data_len_w = (dlc_to_len[13] / 4U);
+  data_len_w += ((dlc_to_len[13] % 4U) > 0U) ? 1U : 0U;
+  for (unsigned int i = 0; i < data_len_w; i++) {
+    fifo->data_word[i] = 0x00;
+  }
+  fifo->header[0] = (0x2ABU << 18);
+  fifo->header[1] = (32 << 16) | (1UL << 21);
+}
+#endif
+
 // ***************************** main code *****************************
 
 // cppcheck-suppress unusedFunction ; used in headers not included in cppcheck
