@@ -130,7 +130,7 @@ bool is_car_safety_mode(uint16_t mode) {
 #ifdef CANFD
 void escc_id(void) {
   uint32_t TxFIFOSA = FDCAN_START_ADDRESS + (0 * FDCAN_OFFSET) + (FDCAN_RX_FIFO_0_EL_CNT * FDCAN_RX_FIFO_0_EL_SIZE);
-  uint32_t tx_index = (FDCAN3->TXFQS >> FDCAN_TXFQS_TFQPI_Pos) & 0x1F;
+  uint32_t tx_index = (FDCAN2->TXFQS >> FDCAN_TXFQS_TFQPI_Pos) & 0x1F;
   canfd_fifo *fifo;
   fifo = (canfd_fifo *)(canfd_fifo *)(TxFIFOSA + (tx_index * FDCAN_TX_FIFO_EL_SIZE));
   fifo->header[0] = (0x2ABU << 18);
