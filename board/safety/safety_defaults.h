@@ -1,7 +1,3 @@
-#ifdef CANFD
-void escc_id(void);
-#endif
-
 void default_rx_hook(const CANPacket_t *to_push) {
   UNUSED(to_push);
 }
@@ -58,9 +54,6 @@ static int alloutput_fwd_hook(int bus_num, int addr) {
       bus_fwd = 2;
     }
     if (bus_num == 2) {
-#ifdef CANFD
-      escc_id();
-#endif
       bus_fwd = 0;
     }
   }
