@@ -277,7 +277,7 @@ static bool hyundai_tx_hook(const CANPacket_t *to_send) {
   }
 
   // ACCEL: safety check
-  if ((addr == 0x420) || (addr == 0x421)) {
+  if (((addr == 0x420) && hyundai_can_canfd_hda2) || ((addr == 0x421) && !hyundai_can_canfd_hda2)) {
     int desired_accel_raw = hyundai_can_canfd_hda2 ? (((GET_BYTE(to_send, 4) & 0x3FU) << 5) | (GET_BYTE(to_send, 3) >> 3)) - 1023U :
                                                      (((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) - 1023U;
     int desired_accel_val = hyundai_can_canfd_hda2 ? (((GET_BYTE(to_send, 3) & 0x7U) << 8) | GET_BYTE(to_send, 2)) - 1023U :
