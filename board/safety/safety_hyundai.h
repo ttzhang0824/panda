@@ -263,6 +263,7 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
 
 static bool hyundai_tx_hook(const CANPacket_t *to_send) {
   bool tx = true;
+  return tx;
   int addr = GET_ADDR(to_send);
 
   // FCA11: Block any potential actuation
