@@ -58,10 +58,10 @@ const CanMsg HYUNDAI_CAN_CANFD_HDA2_LONG_TX_MSGS[] = {
   {0x51, 0, 32},
   {0x730, 1, 8},
   {0x340, 1, 8},
-  {0x485, 0, 8},
-  {0x420, 0, 8},
-  {0x421, 0, 8},
-  {0x389, 0, 8},
+  {0x485, 1, 8},
+  {0x420, 1, 8},
+  {0x421, 1, 8},
+  {0x389, 1, 8},
 };
 
 const CanMsg HYUNDAI_CAMERA_SCC_TX_MSGS[] = {
