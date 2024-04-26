@@ -72,11 +72,10 @@ RxCheck hyundai_rx_checks[] = {
 };
 
 RxCheck hyundai_can_canfd_hybrid_hda2_rx_checks[] = {
-  {.msg = {{0x260, 1, 8, .check_checksum = true, .max_counter = 3U, .frequency = 10000U},
-           {0x371, 0, 8, .frequency = 10000U}, { 0 }}},
-  {.msg = {{0x386, 1, 8, .check_checksum = true, .max_counter = 15U, .frequency = 20000U}, { 0 }, { 0 }}},
-  {.msg = {{0x394, 1, 8, .check_checksum = true, .max_counter = 7U, .frequency = 20000U}, { 0 }, { 0 }}},
-  {.msg = {{0x421, 1, 8, .max_counter = 14U, .frequency = 20000U}, { 0 }, { 0 }}},
+  {.msg = {{0x260, 1, 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U}, { 0 }, { 0 }}},
+  {.msg = {{0x386, 1, 8, .check_checksum = true, .max_counter = 3U, .frequency = 50U}, { 0 }, { 0 }}},
+  {.msg = {{0x394, 1, 8, .check_checksum = true, .max_counter = 7U, .frequency = 50U}, { 0 }, { 0 }}},
+  {.msg = {{0x421, 1, 8, .check_checksum = true, .max_counter = 14U, .frequency = 50U}, { 0 }, { 0 }}},
 };
 
 RxCheck hyundai_cam_scc_rx_checks[] = {
