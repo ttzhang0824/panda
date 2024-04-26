@@ -115,10 +115,7 @@ RxCheck hyundai_legacy_rx_checks[] = {
 };
 
 RxCheck hyundai_can_canfd_hybrid_hda2_long_rx_checks[] = {
-  {.msg = {{0x260, 1, 8, .check_checksum = true, .max_counter = 3U, .frequency = 10000U},
-           {0x371, 0, 8, .frequency = 10000U}, { 0 }}},
-  {.msg = {{0x386, 1, 8, .check_checksum = true, .max_counter = 15U, .frequency = 20000U}, { 0 }, { 0 }}},
-  {.msg = {{0x394, 1, 8, .check_checksum = true, .max_counter = 7U, .frequency = 20000U}, { 0 }, { 0 }}},
+  HYUNDAI_COMMON_RX_CHECKS(false, true, 1)
   {.msg = {{0x4F1, 1, 4, .check_checksum = false, .max_counter = 15U, .frequency = 50U}, { 0 }, { 0 }}},
 };
 
@@ -127,7 +124,6 @@ const int HYUNDAI_PARAM_CAN_CANFD_HYBRID = 256;
 bool hyundai_legacy = false;
 bool hyundai_can_canfd_hybrid = false;
 bool hyundai_can_canfd_hybrid_hda2 = false;
-
 
 
 static uint8_t hyundai_get_counter(const CANPacket_t *to_push) {
