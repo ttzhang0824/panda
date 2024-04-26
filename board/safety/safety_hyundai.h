@@ -58,10 +58,10 @@ const CanMsg HYUNDAI_CAMERA_SCC_TX_MSGS[] = {
 };
 
 #define HYUNDAI_COMMON_RX_CHECKS(legacy, can_canfd, pt_bus)                                                                                            \
-  {.msg = {{0x260, pt_bus, 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U},                                                           \
-           {0x371, pt_bus, 8, .frequency = 100U}, { 0 }}},                                                                                             \
-  {.msg = {{0x386, pt_bus, 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 3U, .frequency = (can_canfd) ? 50U : 100U}, { 0 }, { 0 }}},  \
-  {.msg = {{0x394, pt_bus, 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 7U, .frequency = (can_canfd) ? 50U : 100U}, { 0 }, { 0 }}},  \
+  {.msg = {{0x260, (pt_bus), 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U},                                                           \
+           {0x371, (pt_bus), 8, .frequency = 100U}, { 0 }}},                                                                                             \
+  {.msg = {{0x386, (pt_bus), 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 3U, .frequency = (can_canfd) ? 50U : 100U}, { 0 }, { 0 }}},  \
+  {.msg = {{0x394, (pt_bus), 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 7U, .frequency = (can_canfd) ? 50U : 100U}, { 0 }, { 0 }}},  \
 
 #define HYUNDAI_SCC12_ADDR_CHECK(can_canfd, scc_bus)                                                                                \
   {.msg = {{0x421, (scc_bus), 8, .check_checksum = true, .max_counter = (can_canfd) ? 14U : 15U, .frequency = 50U}, { 0 }, { 0 }}}, \
