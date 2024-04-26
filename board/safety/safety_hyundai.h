@@ -64,7 +64,7 @@ const CanMsg HYUNDAI_CAMERA_SCC_TX_MSGS[] = {
   {.msg = {{0x394, (pt_bus), 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 7U, .frequency = (can_canfd_hybrid) ? 50U : 100U}, { 0 }, { 0 }}},  \
 
 #define HYUNDAI_SCC12_ADDR_CHECK(can_canfd_hybrid, scc_bus)                                                                                \
-  {.msg = {{0x421, (scc_bus), 8, .check_checksum = true, .max_counter = (can_canfd_hybrid) ? 14U : 15U, .frequency = 50U}, { 0 }, { 0 }}}, \
+  {.msg = {{0x421, (scc_bus), 8, .check_checksum = !(can_canfd_hybrid), .max_counter = (can_canfd_hybrid) ? 14U : 15U, .frequency = 50U}, { 0 }, { 0 }}}, \
 
 RxCheck hyundai_rx_checks[] = {
    HYUNDAI_COMMON_RX_CHECKS(false, false, 0)
