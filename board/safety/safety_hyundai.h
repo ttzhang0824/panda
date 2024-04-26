@@ -51,7 +51,7 @@ const CanMsg HYUNDAI_LONG_TX_MSGS[] = {
   {0x7D0, 0, 8}, // radar UDS TX addr Bus 0 (for radar disable)
 };
 
-const CanMsg HYUNDAI_CAN_CANFD_HDA2_LONG_TX_MSGS[] = {
+const CanMsg HYUNDAI_CAN_CANFD_HYBRID_HDA2_LONG_TX_MSGS[] = {
   {0x50, 0, 16},
   {0x4F1, 1, 4},
   {0x2A4, 0, 24},
@@ -114,7 +114,7 @@ RxCheck hyundai_legacy_rx_checks[] = {
   HYUNDAI_SCC12_ADDR_CHECK(false, 0)
 };
 
-RxCheck hyundai_can_canfd_hda2_long_rx_checks[] = {
+RxCheck hyundai_can_canfd_hybrid_hda2_long_rx_checks[] = {
   {.msg = {{0x260, 1, 8, .check_checksum = true, .max_counter = 3U, .frequency = 10000U},
            {0x371, 0, 8, .frequency = 10000U}, { 0 }}},
   {.msg = {{0x386, 1, 8, .check_checksum = true, .max_counter = 15U, .frequency = 20000U}, { 0 }, { 0 }}},
@@ -259,7 +259,7 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
 
     // If openpilot is controlling longitudinal we need to ensure the radar is turned off
     // Enforce by checking we don't see SCC12
-    if (hyundai_longitudinal && (((addr == 0x421) && !hyundai_can_canfd_hda2) || ((addr == 0x420) && hyundai_can_canfd_hda2))) {
+    if (hyundai_longitudinal && (((addr == 0x421) && !hyundai_can_canfd_hybrid_hda2) || ((addr == 0x420) && hyundai_can_canfd_hybrid_hda2))) {
       stock_ecu_detected = true;
     }
     generic_rx_checks(stock_ecu_detected);
@@ -283,14 +283,14 @@ static bool hyundai_tx_hook(const CANPacket_t *to_send) {
   }
 
   // ACCEL: safety check
-  if (((addr == 0x420) && hyundai_can_canfd_hda2) || ((addr == 0x421) && !hyundai_can_canfd_hda2)) {
-    int desired_accel_raw = hyundai_can_canfd_hda2 ? (((GET_BYTE(to_send, 4) & 0x3FU) << 5) | (GET_BYTE(to_send, 3) >> 3)) - 1023U :
-                                                     (((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) - 1023U;
-    int desired_accel_val = hyundai_can_canfd_hda2 ? (((GET_BYTE(to_send, 3) & 0x7U) << 8) | GET_BYTE(to_send, 2)) - 1023U :
-                                                     ((GET_BYTE(to_send, 5) << 3) | (GET_BYTE(to_send, 4) >> 5)) - 1023U;
+  if (((addr == 0x420) && hyundai_can_canfd_hybrid_hda2) || ((addr == 0x421) && !hyundai_can_canfd_hybrid_hda2)) {
+    int desired_accel_raw = hyundai_can_canfd_hybrid_hda2 ? (((GET_BYTE(to_send, 4) & 0x3FU) << 5) | (GET_BYTE(to_send, 3) >> 3)) - 1023U :
+                                                            (((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) - 1023U;
+    int desired_accel_val = hyundai_can_canfd_hybrid_hda2 ? (((GET_BYTE(to_send, 3) & 0x7U) << 8) | GET_BYTE(to_send, 2)) - 1023U :
+                                                            ((GET_BYTE(to_send, 5) << 3) | (GET_BYTE(to_send, 4) >> 5)) - 1023U;
 
-    int aeb_decel_cmd = hyundai_can_canfd_hda2 ? 0 : GET_BYTE(to_send, 2);
-    bool aeb_req = hyundai_can_canfd_hda2 ? 0 : GET_BIT(to_send, 54U);
+    int aeb_decel_cmd = hyundai_can_canfd_hybrid_hda2 ? 0 : GET_BYTE(to_send, 2);
+    bool aeb_req = hyundai_can_canfd_hybrid_hda2 ? 0 : GET_BIT(to_send, 54U);
 
     bool violation = false;
 
@@ -387,8 +387,8 @@ static safety_config hyundai_init(uint16_t param) {
 
   safety_config ret;
   if (hyundai_longitudinal) {
-    ret = hyundai_can_canfd_hda2 ? BUILD_SAFETY_CFG(hyundai_can_canfd_hda2_long_rx_checks, HYUNDAI_CAN_CANFD_HDA2_LONG_TX_MSGS) :
-                                   BUILD_SAFETY_CFG(hyundai_long_rx_checks, HYUNDAI_LONG_TX_MSGS);
+    ret = hyundai_can_canfd_hybrid_hda2 ? BUILD_SAFETY_CFG(hyundai_can_canfd_hybrid_hda2_long_rx_checks, HYUNDAI_CAN_CANFD_HYBRID_HDA2_LONG_TX_MSGS) :
+                                          BUILD_SAFETY_CFG(hyundai_long_rx_checks, HYUNDAI_LONG_TX_MSGS);
   } else if (hyundai_camera_scc) {
     ret = BUILD_SAFETY_CFG(hyundai_cam_scc_rx_checks, HYUNDAI_CAMERA_SCC_TX_MSGS);
   // TODO: should just be hyundai_hda2
