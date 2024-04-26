@@ -71,7 +71,7 @@ RxCheck hyundai_rx_checks[] = {
    HYUNDAI_SCC12_ADDR_CHECK(0)
 };
 
-RxCheck hyundai_can_canfd_hybrid_rx_checks[] = {
+RxCheck hyundai_can_canfd_hybrid_hda2_rx_checks[] = {
   {.msg = {{0x260, 1, 8, .check_checksum = true, .max_counter = 3U, .frequency = 10000U},
            {0x371, 0, 8, .frequency = 10000U}, { 0 }}},
   {.msg = {{0x386, 1, 8, .check_checksum = true, .max_counter = 15U, .frequency = 20000U}, { 0 }, { 0 }}},
@@ -348,7 +348,7 @@ static safety_config hyundai_init(uint16_t param) {
   hyundai_can_canfd_hybrid = GET_FLAG(param, HYUNDAI_PARAM_CAN_CANFD_HYBRID);
   hyundai_can_canfd_hybrid_hda2 = hyundai_can_canfd_hybrid && hyundai_canfd_hda2;
 
-  if (hyundai_can_canfd_hybrid) {
+  if (hyundai_can_canfd_hybrid_hda2) {
     gen_crc_lookup_table_16(0x1021, hyundai_canfd_crc_lut);
   }
 
@@ -363,7 +363,7 @@ static safety_config hyundai_init(uint16_t param) {
     ret = BUILD_SAFETY_CFG(hyundai_cam_scc_rx_checks, HYUNDAI_CAMERA_SCC_TX_MSGS);
   // TODO: should just be hyundai_hda2
   } else if (hyundai_can_canfd_hybrid_hda2) {
-    ret = BUILD_SAFETY_CFG(hyundai_can_canfd_hybrid_rx_checks, HYUNDAI_CAN_CANFD_HYBRID_HDA2_TX_MSGS);
+    ret = BUILD_SAFETY_CFG(hyundai_can_canfd_hybrid_hda2_rx_checks, HYUNDAI_CAN_CANFD_HYBRID_HDA2_TX_MSGS);
   } else {
     ret = BUILD_SAFETY_CFG(hyundai_rx_checks, HYUNDAI_TX_MSGS);
   }
