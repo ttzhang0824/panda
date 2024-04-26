@@ -57,42 +57,40 @@ const CanMsg HYUNDAI_CAMERA_SCC_TX_MSGS[] = {
   {0x485, 0, 4}, // LFAHDA_MFC Bus 0
 };
 
-#define HYUNDAI_COMMON_RX_CHECKS(legacy)                                                                                              \
-  {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U},                                       \
-           {0x371, 0, 8, .frequency = 100U}, { 0 }}},                                                                         \
-  {.msg = {{0x386, 0, 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 15U, .frequency = 100U}, { 0 }, { 0 }}}, \
-  {.msg = {{0x394, 0, 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 7U, .frequency = 100U}, { 0 }, { 0 }}},  \
+#define HYUNDAI_COMMON_RX_CHECKS(legacy, can_canfd, pt_bus)                                                                                            \
+  {.msg = {{0x260, pt_bus, 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U},                                                           \
+           {0x371, pt_bus, 8, .frequency = 100U}, { 0 }}},                                                                                             \
+  {.msg = {{0x386, pt_bus, 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 3U, .frequency = (can_canfd) ? 50U : 100U}, { 0 }, { 0 }}},  \
+  {.msg = {{0x394, pt_bus, 8, .check_checksum = !(legacy), .max_counter = (legacy) ? 0U : 7U, .frequency = (can_canfd) ? 50U : 100U}, { 0 }, { 0 }}},  \
 
-#define HYUNDAI_SCC12_ADDR_CHECK(scc_bus)                                                                                  \
-  {.msg = {{0x421, (scc_bus), 8, .check_checksum = true, .max_counter = 15U, .frequency = 50U}, { 0 }, { 0 }}}, \
+#define HYUNDAI_SCC12_ADDR_CHECK(can_canfd, scc_bus)                                                                                \
+  {.msg = {{0x421, (scc_bus), 8, .check_checksum = true, .max_counter = (can_canfd) ? 14U : 15U, .frequency = 50U}, { 0 }, { 0 }}}, \
 
 RxCheck hyundai_rx_checks[] = {
-   HYUNDAI_COMMON_RX_CHECKS(false)
-   HYUNDAI_SCC12_ADDR_CHECK(0)
+   HYUNDAI_COMMON_RX_CHECKS(false, false, 0)
+   HYUNDAI_SCC12_ADDR_CHECK(false, 0)
 };
 
 RxCheck hyundai_can_canfd_hybrid_hda2_rx_checks[] = {
-  {.msg = {{0x260, 1, 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U}, { 0 }, { 0 }}},
-  {.msg = {{0x386, 1, 8, .check_checksum = true, .max_counter = 3U, .frequency = 50U}, { 0 }, { 0 }}},
-  {.msg = {{0x394, 1, 8, .check_checksum = true, .max_counter = 7U, .frequency = 50U}, { 0 }, { 0 }}},
-  {.msg = {{0x421, 1, 8, .check_checksum = true, .max_counter = 14U, .frequency = 50U}, { 0 }, { 0 }}},
+  HYUNDAI_COMMON_RX_CHECKS(false, true, 1)
+  HYUNDAI_SCC12_ADDR_CHECK(true, 1)
 };
 
 RxCheck hyundai_cam_scc_rx_checks[] = {
-  HYUNDAI_COMMON_RX_CHECKS(false)
-  HYUNDAI_SCC12_ADDR_CHECK(2)
+  HYUNDAI_COMMON_RX_CHECKS(false, false, 0)
+  HYUNDAI_SCC12_ADDR_CHECK(false, 2)
 };
 
 RxCheck hyundai_long_rx_checks[] = {
-  HYUNDAI_COMMON_RX_CHECKS(false)
+  HYUNDAI_COMMON_RX_CHECKS(false, false, 0)
   // Use CLU11 (buttons) to manage controls allowed instead of SCC cruise state
   {.msg = {{0x4F1, 0, 4, .check_checksum = false, .max_counter = 15U, .frequency = 50U}, { 0 }, { 0 }}},
 };
 
 // older hyundai models have less checks due to missing counters and checksums
 RxCheck hyundai_legacy_rx_checks[] = {
-  HYUNDAI_COMMON_RX_CHECKS(true)
-  HYUNDAI_SCC12_ADDR_CHECK(0)
+  HYUNDAI_COMMON_RX_CHECKS(true, false, 0)
+  HYUNDAI_SCC12_ADDR_CHECK(false, 0)
 };
 
 
