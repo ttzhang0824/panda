@@ -300,7 +300,7 @@ static bool hyundai_tx_hook(const CANPacket_t *to_send) {
   }
 
   // LKA STEER: safety check
-  if (addr == 0x340) {
+  if ((addr == 0x340) && !hyundai_can_canfd_hybrid_hda2) {
     int desired_torque = ((GET_BYTES(to_send, 0, 4) >> 16) & 0x7ffU) - 1024U;
     bool steer_req = GET_BIT(to_send, 27U);
 
