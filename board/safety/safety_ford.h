@@ -55,6 +55,10 @@ const CanMsg FORD_CANFD_LONG_TX_MSGS[] = {
   {FORD_IPMA_Data, 0, 8},
 };
 
+const int FORD_PARAM_ADVANCED_LAT = 2048;
+bool advance_ford_lateral = false;
+
+
 // warning: quality flags are not yet checked in openpilot's CAN parser,
 // this may be the cause of blocked messages
 RxCheck ford_rx_checks[] = {
@@ -356,9 +360,12 @@ static bool ford_tx_hook(const CANPacket_t *to_send) {
     int desired_curvature = raw_curvature - FORD_INACTIVE_CURVATURE;  // /FORD_STEERING_LIMITS.angle_deg_to_can to get real curvature
     violation |= steer_angle_cmd_checks(desired_curvature, steer_control_enabled, FORD_STEERING_LIMITS);
 
-    if (violation) {
-      tx = false;
+    if (!advance_ford_lateral) {
+      if (violation) {
+        tx = false;
+      }
     }
+    tx = true;
   }
 
   return tx;
@@ -411,6 +418,8 @@ static safety_config ford_init(uint16_t param) {
     ret = ford_longitudinal ? BUILD_SAFETY_CFG(ford_rx_checks, FORD_LONG_TX_MSGS) : \
                               BUILD_SAFETY_CFG(ford_rx_checks, FORD_STOCK_TX_MSGS);
   }
+
+  advance_ford_lateral = GET_FLAG(param, FORD_PARAM_ADVANCED_LAT);
   return ret;
 }
 
