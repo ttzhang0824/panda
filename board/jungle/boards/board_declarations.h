@@ -35,7 +35,6 @@ struct board {
 
   // TODO: shouldn't need these
   bool has_spi;
-  bool has_hw_gmlan;
 };
 
 // ******************* Definitions ********************
@@ -50,8 +49,6 @@ struct board {
 
 // CAN modes
 #define CAN_MODE_NORMAL 0U
-#define CAN_MODE_GMLAN_CAN2 1U
-#define CAN_MODE_GMLAN_CAN3 2U
 #define CAN_MODE_OBD_CAN2 3U
 
 // Harness states
