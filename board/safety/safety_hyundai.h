@@ -97,7 +97,8 @@ RxCheck hyundai_legacy_rx_checks[] = {
 RxCheck hyundai_non_scc_addr_checks[] = {
   {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U},
            {0x371, 0, 8, .frequency = 100U}, { 0 }}},
-  {.msg = {{0x367, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},
+  {.msg = {{0x367, 0, 8, .frequency = 100U},
+           {0x595, 0, 8, .frequency = 10U}, { 0 }}},
   {.msg = {{0x386, 0, 8, .check_checksum = true, .max_counter = 15U, .frequency = 100U}, { 0 }, { 0 }}},
 };
 
@@ -242,14 +243,18 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
     }
 
     if (hyundai_non_scc) {
-      if (addr == 0x367) {
-        bool cruise_engaged = GET_BYTE(to_push, 0) != 0U; // CF_Lvr_CruiseSet signal
+      bool cruise_engaged = (hyundai_ev_gas_signal || hyundai_hybrid_gas_signal) ? GET_BIT(to_push, 51U) : GET_BYTE(to_push, 0) != 0U;
+      if (((addr == 0x595) && (hyundai_ev_gas_signal || hyundai_hybrid_gas_signal)) ||
+          ((addr == 0x367) && !hyundai_ev_gas_signal && !hyundai_hybrid_gas_signal)) {
         hyundai_common_cruise_state_check(cruise_engaged);
+      } else {
       }
 
-      if (addr == 0x260) {
-        acc_main_on = GET_BIT(to_push, 25U); // CRUISE_LAMP_M signal
+      acc_main_on = (hyundai_ev_gas_signal || hyundai_hybrid_gas_signal) ? GET_BIT(to_push, 50U) : GET_BIT(to_push, 25U);
+      if (((addr == 0x595) && (hyundai_ev_gas_signal || hyundai_hybrid_gas_signal)) ||
+          ((addr == 0x260) && !hyundai_ev_gas_signal && !hyundai_hybrid_gas_signal)) {
         mads_acc_main_check(acc_main_on);
+      } else {
       }
     }
 
