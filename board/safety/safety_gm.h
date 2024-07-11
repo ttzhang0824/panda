@@ -189,9 +189,10 @@ static bool gm_tx_hook(const CANPacket_t *to_send) {
     int button = (GET_BYTE(to_send, 5) >> 4) & 0x7U;
 
     bool allowed_cancel = (button == 6) && cruise_engaged_prev;
-    bool accel = (button == 2);
-    bool decel = (button == 3);
-    bool allowed = allowed_cancel || ((accel || decel) && controls_allowed && controls_allowed_long);
+    bool unpressed = (button == GM_BTN_UNPRESS) && controls_allowed && controls_allowed_long;
+    bool accel = (button == GM_BTN_RESUME) && controls_allowed && controls_allowed_long;
+    bool decel = (button == GM_BTN_SET) && controls_allowed && controls_allowed_long;
+    bool allowed = allowed_cancel || accel || decel || unpressed;
     if (!allowed) {
       tx = false;
     }
