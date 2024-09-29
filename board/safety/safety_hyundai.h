@@ -173,7 +173,7 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
   if ((addr == 0x420) && (((bus == 0) && !hyundai_camera_scc) || ((bus == 2) && hyundai_camera_scc))) {
     if (!hyundai_longitudinal) {
       acc_main_on = GET_BIT(to_push, 0U);
-      mads_acc_main_check();
+      mads_check_acc_main();
     }
   }
 
@@ -214,7 +214,7 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
 
     if ((addr == 0x391) && hyundai_lfa_button && enable_mads) {
       alt_button_pressed = GET_BIT(to_push, 4U);
-      alt_button_check();
+      mads_check_alt_button();
     }
 
     bool stock_ecu_detected = (addr == 0x340);
@@ -241,11 +241,6 @@ static bool hyundai_tx_hook(const CANPacket_t *to_send) {
     if ((CR_VSM_DecCmd != 0) || FCA_CmdAct || CF_VSM_DecCmdAct) {
       tx = false;
     }
-  }
-
-  if (addr == 0x420) {
-    acc_main_on = GET_BIT(to_send, 0U);
-    mads_acc_main_check();
   }
 
   // ACCEL: safety check

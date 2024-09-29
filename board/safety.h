@@ -184,7 +184,7 @@ void safety_tick(const safety_config *cfg) {
       cfg->rx_checks[i].status.lagging = lagging;
       if (lagging) {
         controls_allowed = false;
-        set_mads_state(false);
+        mads_set_state(false);
       }
 
       if (lagging || !is_msg_valid(cfg->rx_checks, i)) {
@@ -211,7 +211,7 @@ bool is_msg_valid(RxCheck addr_list[], int index) {
     if (!addr_list[index].status.valid_checksum || !addr_list[index].status.valid_quality_flag || (addr_list[index].status.wrong_counters >= MAX_WRONG_COUNTERS)) {
       valid = false;
       controls_allowed = false;
-      set_mads_state(false);
+      mads_set_state(false);
     }
   }
   return valid;
@@ -263,7 +263,7 @@ void generic_rx_checks(bool stock_ecu_detected) {
   // exit controls on rising edge of gas press
   if (gas_pressed && !gas_pressed_prev && !(alternative_experience & ALT_EXP_DISABLE_DISENGAGE_ON_GAS)) {
     controls_allowed = false;
-    set_mads_state(false);
+    mads_set_state(false);
   }
   gas_pressed_prev = gas_pressed;
 
