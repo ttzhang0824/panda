@@ -1,6 +1,6 @@
 #pragma once
 
-void mads_set_state(const bool state) {
+void mads_set_state(bool state) {
   controls_allowed_lat = state;
   disengaged_from_brakes = state;
 }

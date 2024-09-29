@@ -294,6 +294,7 @@ static safety_config hyundai_init(uint16_t param) {
 
   hyundai_common_init(param);
   hyundai_legacy = false;
+  hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BUTTON);
 
   if (hyundai_camera_scc) {
     hyundai_longitudinal = false;
@@ -337,6 +338,7 @@ static safety_config hyundai_legacy_init(uint16_t param) {
   hyundai_legacy = true;
   hyundai_longitudinal = false;
   hyundai_camera_scc = false;
+  hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BUTTON);
   return BUILD_SAFETY_CFG(hyundai_legacy_rx_checks, HYUNDAI_TX_MSGS);
 }
 

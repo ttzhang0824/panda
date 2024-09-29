@@ -208,13 +208,19 @@ extern int cruise_button_prev;
 extern bool safety_rx_checks_invalid;
 
 // mads
-extern bool enable_mads = false;
-extern bool disengage_lateral_on_brake = false;
-extern bool disengaged_from_brakes = false;
-extern bool controls_allowed_lat = false;
-extern bool acc_main_on_prev = false;
-extern bool alt_button_pressed = false;
-extern bool alt_button_pressed_prev = false;
+void mads_set_state(bool state);
+void mads_check_acc_main(void);
+void mads_check_alt_button(void);
+void mads_exit_controls(void);
+void mads_resume_controls(void);
+void check_braking_condition(bool state, bool state_prev);
+
+extern bool enable_mads;
+extern bool disengage_lateral_on_brake;
+extern bool disengaged_from_brakes;
+extern bool controls_allowed_lat;
+extern bool alt_button_pressed;
+extern bool alt_button_pressed_prev;
 
 // for safety modes with torque steering control
 extern int desired_torque_last;       // last desired steer torque
