@@ -109,9 +109,8 @@ class ALTERNATIVE_EXPERIENCE:
   ALLOW_AEB = 16
 
   # sunnypilot
-  SUNNYPILOT_OFFSET = 8
-  ENABLE_MADS = 1 << SUNNYPILOT_OFFSET
-  DISABLE_DISENGAGE_LATERAL_ON_BRAKE = 2 << SUNNYPILOT_OFFSET
+  ENABLE_MADS = 2 ** 10
+  DISABLE_DISENGAGE_LATERAL_ON_BRAKE = 2 ** 11
 
 class Panda:
 
@@ -206,6 +205,7 @@ class Panda:
   FLAG_HYUNDAI_CANFD_ALT_BUTTONS = 32
   FLAG_HYUNDAI_ALT_LIMITS = 64
   FLAG_HYUNDAI_CANFD_HDA2_ALT_STEERING = 128
+  FLAG_HYUNDAI_LFA_BUTTON = 2 ** 10
 
   FLAG_TESLA_POWERTRAIN = 1
   FLAG_TESLA_LONG_CONTROL = 2
@@ -878,8 +878,8 @@ class Panda:
     """
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xf2, port_number, 0, b'')
 
-  def send_heartbeat(self, engaged=True):
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xf3, engaged, 0, b'')
+  def send_heartbeat(self, engaged=True, mads_engaged=True):
+    self._handle.controlWrite(Panda.REQUEST_OUT, 0xf3, engaged, mads_engaged, b'')
 
   # disable heartbeat checks for use outside of openpilot
   # sending a heartbeat will reenable the checks

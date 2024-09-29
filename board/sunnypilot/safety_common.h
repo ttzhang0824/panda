@@ -23,47 +23,26 @@ void alt_button_check(void) {
   alt_button_pressed_prev = alt_button_pressed;
 }
 
-void mads_exit_controls(const bool should_disengage) {
-  if (should_disengage) {
-    if (controls_allowed_lat) {
-      disengaged_from_brakes = true;
-    }
-    controls_allowed_lat = false;
-  } else {
+void mads_exit_controls(void) {
+  if (controls_allowed_lat) {
     disengaged_from_brakes = true;
+    controls_allowed_lat = false;
   }
-
-  controls_allowed = false;
 }
 
-void mads_resume_controls(const bool disengaged) {
-  disengaged_from_brakes = false;
-  if (disengaged) {
+void mads_resume_controls(void) {
+  if (disengaged_from_brakes) {
     controls_allowed_lat = true;
+    disengaged_from_brakes = false;
   }
 }
 
 void check_braking_condition(bool state, bool state_prev) {
-  bool dlob = (alternative_experience & ALT_EXP_ENABLE_MADS);
-
-  if (enable_mads) {
-    if (state && (!state_prev || vehicle_moving)) {
-      mads_exit_controls(dlob);
-    } else if (!state && disengaged_from_brakes) {
-      mads_resume_controls(dlob);
-    } else {
-    }
+  if (state && (!state_prev || vehicle_moving)) {
+    controls_allowed = false;
+    disengage_lateral_on_brake ? mads_exit_controls() : set_mads_state(false);
+  } else if (!state && disengage_lateral_on_brake) {
+    mads_resume_controls();
   } else {
-    if (state && (!state_prev || vehicle_moving)) {
-      controls_allowed = false;
-      set_mads_state(false);
-    }
   }
-}
-
-void mads_disengage_lateral_on_brake(void) {
-  if (controls_allowed_lat) {
-    disengaged_from_brakes = true;
-  }
-  controls_allowed_lat = false;
 }

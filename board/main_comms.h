@@ -247,6 +247,8 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
       // you can only set this if you are in a non car safety mode
       if (!is_car_safety_mode(current_safety_mode)) {
         alternative_experience = req->param1;
+        enable_mads = (alternative_experience & ALT_EXP_ENABLE_MADS) != 0;
+        disengage_lateral_on_brake = !(alternative_experience & ALT_EXP_DISABLE_DISENGAGE_LATERAL_ON_BRAKE);
       }
       break;
     // **** 0xe0: uart read
@@ -345,7 +347,7 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
         heartbeat_counter = 0U;
         heartbeat_lost = false;
         heartbeat_disabled = false;
-        heartbeat_engaged = (req->param1 == 1U);
+        heartbeat_engaged = (req->param1 == 1U) || (req->param2 == 1U);
         break;
       }
     // **** 0xf6: set siren enabled

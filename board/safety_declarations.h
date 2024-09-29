@@ -225,6 +225,7 @@ bool safety_rx_checks_invalid = false;
 
 // mads
 bool enable_mads = false;
+bool disengage_lateral_on_brake = false;
 bool disengaged_from_brakes = false;
 bool controls_allowed_lat = false;
 bool acc_main_on_prev = false;
@@ -272,11 +273,11 @@ struct sample_t angle_meas;         // last 6 steer angles/curvatures
 // will enable MADS and allow other features to be used.
 // Enable the ability to re-engage sunnypilot Automatic Lane Centering only (NOT ACC/SCC) on brake release while MADS
 // is enabled.
-#define ALT_EXP_ENABLE_MADS 32
+#define ALT_EXP_ENABLE_MADS 1024
 
 // Enable the ability to disable disengaging lateral control on brake press while MADS is enabled.
 // The feature must be gated behind this flag per geohot's comment on the comma community Discord server.
-#define ALT_EXP_DISABLE_DISENGAGE_LATERAL_ON_BRAKE 64
+#define ALT_EXP_DISABLE_DISENGAGE_LATERAL_ON_BRAKE 2048
 
 int alternative_experience = 0;
 
